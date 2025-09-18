@@ -4,93 +4,287 @@ import { useState, useEffect } from "react";
 
 export default function SettingsSection({ refreshSwitches }) {
   const [switches, setSwitches] = useState([]);
-  const [newSwitch, setNewSwitch] = useState("");
+  const [newSwitch, setNewSwitch] = useState({ name: "", ip: "", image: "", files: "" });
   const [loading, setLoading] = useState(false);
+  const [editingSwitch, setEditingSwitch] = useState(null); // {name, ip, image, files, originalName}
+  const [tftpServer, setTftpServer] = useState(""); // TFTP server IP
 
+  // Fetch all switches
   const fetchSwitches = async () => {
     try {
       const res = await fetch("http://localhost:4000/api/switches");
       const data = await res.json();
       setSwitches(data);
     } catch (err) {
-      console.error("Error fetching switches:", err);
+      console.error(err);
+    }
+  };
+
+  // Fetch TFTP server config
+  const fetchConfig = async () => {
+    try {
+      const res = await fetch("http://localhost:4000/api/config/tftp");
+      if (res.ok) {
+        const data = await res.json();
+        setTftpServer(data.config?.tftpServer || "");
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
   useEffect(() => {
     fetchSwitches();
+    fetchConfig();
   }, []);
 
+  // Save TFTP server
+  const saveTftpServer = async () => {
+    if (!tftpServer) return alert("TFTP server IP required");
+    try {
+      const res = await fetch("http://localhost:4000/api/config/tftp", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tftpServer }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Failed to save TFTP server");
+      } else {
+        alert("TFTP server saved!");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Add new switch
   const addSwitch = async () => {
-    if (!newSwitch) return;
+    if (!newSwitch.name || !newSwitch.ip) return alert("Name and IP required");
     setLoading(true);
     try {
-      await fetch("http://localhost:4000/api/switches", {
+      const filesArray = newSwitch.files
+        ? newSwitch.files.split(",").map((f) => f.trim()).filter(Boolean)
+        : [];
+
+      const res = await fetch("http://localhost:4000/api/switches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newSwitch }),
+        body: JSON.stringify({ ...newSwitch, files: filesArray }),
       });
-      setNewSwitch("");
-      fetchSwitches();
-      refreshSwitches();
+      if (!res.ok) {
+        const errData = await res.json();
+        alert(errData.error || "Failed to add switch");
+      } else {
+        setNewSwitch({ name: "", ip: "", image: "", files: "" });
+        fetchSwitches();
+        refreshSwitches?.();
+      }
     } catch (err) {
-      console.error("Error adding switch:", err);
+      console.error(err);
     }
     setLoading(false);
   };
 
+  // Delete switch
   const deleteSwitch = async (name) => {
-    if (!confirm(`Are you sure you want to delete switch "${name}"? This will also delete its backups.`)) return;
+    if (!confirm(`Delete switch "${name}"? This will remove all backups.`)) return;
     try {
-      await fetch(`http://localhost:4000/api/switches/${name}`, { method: "DELETE" });
-      fetchSwitches();
-      refreshSwitches();
+      const res = await fetch(`http://localhost:4000/api/switches/${name}`, { method: "DELETE" });
+      if (!res.ok) {
+        const errData = await res.json();
+        alert(errData.error || "Failed to delete switch");
+      } else {
+        fetchSwitches();
+        refreshSwitches?.();
+      }
     } catch (err) {
-      console.error("Error deleting switch:", err);
+      console.error(err);
     }
   };
 
-  return (
-    <div className="p-6 bg-[#1E1E23] rounded-xl">
-      <h2 className="text-2xl mb-4">Settings</h2>
+  // Start editing a switch
+  const startEditing = (sw) => {
+    setEditingSwitch({
+      ...sw,
+      files: sw.files ? sw.files.join(", ") : "",
+      originalName: sw.name,
+    });
+  };
 
-      <div className="flex space-x-2 mb-6">
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingSwitch(null);
+  };
+
+  // Save edited switch
+  const saveSwitch = async () => {
+    if (!editingSwitch.name || !editingSwitch.ip) return alert("Name and IP required");
+    setLoading(true);
+    try {
+      const filesArray = editingSwitch.files
+        ? editingSwitch.files.split(",").map((f) => f.trim()).filter(Boolean)
+        : [];
+
+      const res = await fetch(`http://localhost:4000/api/switches/${editingSwitch.originalName}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...editingSwitch, files: filesArray }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        alert(errData.error || "Failed to update switch");
+      } else {
+        setEditingSwitch(null);
+        fetchSwitches();
+        refreshSwitches?.();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="p-6 bg-[#1A1A1F] rounded-xl space-y-6">
+      {/* User Settings */}
+      <div className="space-y-2">
+        <h2 className="text-2xl">User Settings</h2>
+      </div>
+
+      {/* Add Switch */}
+      <h2 className="text-2xl">Server Settings</h2>
+      <div className="flex flex-col space-y-2 bg-[#1E1E23] p-4 rounded-xl">
         <input
-          value={newSwitch}
-          onChange={(e) => setNewSwitch(e.target.value)}
-          placeholder="New switch name"
-          className="p-2 rounded bg-[#2A2A30] text-white flex-1"
+          value={newSwitch.name}
+          onChange={(e) => setNewSwitch({ ...newSwitch, name: e.target.value })}
+          placeholder="Switch Name"
+          className="p-2 rounded-xl bg-[#1E1E23] text-white"
+        />
+        <input
+          value={newSwitch.ip}
+          onChange={(e) => setNewSwitch({ ...newSwitch, ip: e.target.value })}
+          placeholder="IP Address"
+          className="p-2 rounded-xl bg-[#1E1E23] text-white"
+        />
+        <input
+          value={newSwitch.image}
+          onChange={(e) => setNewSwitch({ ...newSwitch, image: e.target.value })}
+          placeholder="Image URL (optional)"
+          className="p-2 rounded-xl bg-[#1E1E23] text-white"
+        />
+        <input
+          value={newSwitch.files}
+          onChange={(e) => setNewSwitch({ ...newSwitch, files: e.target.value })}
+          placeholder="Files to fetch (comma-separated)"
+          className="p-2 rounded-xl bg-[#1E1E23] text-white"
         />
         <button
           onClick={addSwitch}
           disabled={loading}
-          className={`px-4 py-2 rounded ${
-            loading ? "bg-gray-500 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-          } text-white`}
+          className={`px-4 py-2 rounded-xl cursor-pointer transform text-white transition-colors duration-200 ${
+            loading ? "bg-gray-500 cursor-not-allowed" : "bg-[#414562] hover:bg-[#545C80]"
+          }`}
         >
-          Add
+          {loading ? "Adding..." : "Add Switch"}
         </button>
       </div>
 
-      <h3 className="text-xl mb-2">Existing Switches</h3>
-      {switches.length === 0 && <p className="text-gray-400">No switches added yet.</p>}
-
-      <ul className="space-y-2">
-        {switches.map((sw) => (
-          <li
-            key={sw}
-            className="flex justify-between items-center bg-[#2A2A30] p-2 rounded"
+      {/* Existing Switches */}
+      <div className="space-y-2">
+        <h3 className="text-xl">Existing Switches</h3>
+        {switches.length === 0 && <p className="text-gray-400">No switches yet.</p>}
+        <ul className="space-y-2">
+          {switches.map((sw, index) => (
+            <li key={sw.name + index} className="flex justify-between items-center bg-[#1E1E23] p-2 rounded-xl">
+              {editingSwitch?.originalName === sw.name ? (
+                <div className="flex-1 space-y-1">
+                  <input
+                    value={editingSwitch.name}
+                    onChange={(e) => setEditingSwitch({ ...editingSwitch, name: e.target.value })}
+                    className="p-1 rounded-xl bg-[#1E1E23] text-white w-full"
+                  />
+                  <input
+                    value={editingSwitch.ip}
+                    onChange={(e) => setEditingSwitch({ ...editingSwitch, ip: e.target.value })}
+                    className="p-1 rounded-xl bg-[#1E1E23] text-white w-full"
+                  />
+                  <input
+                    value={editingSwitch.image}
+                    onChange={(e) => setEditingSwitch({ ...editingSwitch, image: e.target.value })}
+                    className="p-1 rounded-xl bg-[#1E1E23] text-white w-full"
+                  />
+                  <input
+                    value={editingSwitch.files}
+                    onChange={(e) => setEditingSwitch({ ...editingSwitch, files: e.target.value })}
+                    placeholder="Files to fetch (comma-separated)"
+                    className="p-1 rounded-xl bg-[#1E1E23] text-white w-full"
+                  />
+                  <div className="flex space-x-2 mt-1">
+                    <button
+                      onClick={saveSwitch}
+                      className="px-3 py-1 rounded-xl bg-[#414562] hover:bg-[#545C80] cursor-pointer transform text-white transition-colors duration-200"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={cancelEditing}
+                      className="px-3 py-1 rounded-xl bg-[#414562] hover:bg-[#545C80] cursor-pointer transform text-white transition-colors duration-200"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center w-full">
+                  <div className="flex items-center space-x-2">
+                    <img src={sw.image || "/images/cisco_switch.jpg"} alt={sw.name} className="h-8 w-8 rounded-xl" />
+                    <div>
+                      <p>{sw.name}</p>
+                      <p className="text-sm text-gray-400">{sw.ip}</p>
+                      {sw.files && sw.files.length > 0 && (
+                        <p className="text-sm text-gray-400">Files: {sw.files.join(", ")}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => startEditing({ ...sw, originalName: sw.name })}
+                      className="px-3 py-1 rounded-xl bg-[#414562] hover:bg-[#545C80] cursor-pointer transform text-white transition-colors duration-200"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deleteSwitch(sw.name)}
+                      className="px-3 py-1 rounded-xl bg-[#414562] hover:bg-[#545C80] cursor-pointer transform text-white transition-colors duration-200"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+        <p className="text-gray-400 text-sm">Edit and delete switches.</p>
+      </div>
+      <h3 className="text-xl">TFTP Server</h3>
+      <div className="flex space-x-2 items-center">
+          <input
+            type="text"
+            value={tftpServer}
+            onChange={(e) => setTftpServer(e.target.value)}
+            placeholder="TFTP Server IP"
+            className="p-2 rounded-xl bg-[#1E1E23] text-white flex-1"
+          />
+          <button
+            onClick={saveTftpServer}
+            className="px-4 py-2 rounded-xl bg-[#414562] hover:bg-[#545C80] text-white cursor-pointer transform transition-colors duration-200"
           >
-            <span>{sw}</span>
-            <button
-              onClick={() => deleteSwitch(sw)}
-              className="px-3 py-1 rounded bg-red-600 hover:bg-red-700 text-white"
-            >
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
+            Save
+          </button>
+        </div>
+        <p className="text-gray-400 text-sm">Configure the TFTP server used to fetch missing backups.</p>
     </div>
   );
 }

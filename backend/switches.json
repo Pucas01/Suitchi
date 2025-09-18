@@ -1,3 +1,15 @@
 [
-  "INT01-CSW"
+  {
+    "name": "INT02-CSW",
+    "ip": "172.16.12.254",
+    "image": "https://cf-images.dustin.eu/cdn-cgi/image/fit=contain,format=auto,quality=75,width=828,fit=contain/image/d200001001720807/cisco-cbs220-24g-4sfp-smart-switch.png",
+    "files": [
+      "int02-csw"
+    ]
+  },
+  {
+    "name": "Asa Mitaka",
+    "ip": "I love asa ",
+    "image": "https://media.tenor.com/Yxuk-kasVfEAAAAM/asa-mitaka.gif"
+  }
 ]
