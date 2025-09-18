@@ -30,7 +30,8 @@ export default function Page() {
                 : "bg-[#414562] hover:bg-[#545C80]"
             } ${popping === "Switches" ? "animate-pop" : ""}`}
           >
-            Switches
+          <img src="/images/cisco_switch.jpg" className="rounded-xl" />
+          <span className="block pt-2">"SwitchName"</span>
           </button>
         </div>
 
