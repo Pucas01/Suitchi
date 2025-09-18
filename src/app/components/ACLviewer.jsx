@@ -1,3 +1,5 @@
 export default function ACLviewer() {
-  return <h1 className="text-2xl font-bold mb-4">Access Control List</h1>;
+  return <div className="flex-1 rounded-xl h-screen bg-[#1A1A1F]">
+    
+  </div>;
 }
