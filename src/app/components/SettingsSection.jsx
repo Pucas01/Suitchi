@@ -154,6 +154,7 @@ export default function SettingsSection({ refreshSwitches }) {
 
       {/* Add Switch */}
       <h2 className="text-2xl">Server Settings</h2>
+      <h3 className="text-xl">Add a Switch</h3>
       <div className="flex flex-col space-y-2 bg-[#1E1E23] p-4 rounded-xl">
         <input
           value={newSwitch.name}
