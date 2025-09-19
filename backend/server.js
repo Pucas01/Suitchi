@@ -6,6 +6,7 @@ const backupsRoutes = require("./routes/backups");
 const tftpRoutes = require("./routes/tftp");
 const aclRoutes = require("./routes/acl");
 const snmpRoutes = require("./routes/snmp");
+const usersRoutes = require("./routes/users");
 const fs = require("fs");
 const path = require("path");
 
@@ -19,6 +20,7 @@ app.use("/api", tftpRoutes);
 app.use("/api/acl", aclRoutes);
 app.use("/api/snmp", snmpRoutes);
 app.use("/api/backups", backupsRoutes)
+app.use("/api", usersRoutes);
 
 
 const PORT = 4000;

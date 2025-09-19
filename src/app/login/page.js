@@ -18,7 +18,6 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
-        credentials: "include", // 🔑 sends cookies
       });
 
       const data = await res.json();
@@ -28,7 +27,10 @@ export default function LoginPage() {
         return;
       }
 
-      // redirect after login
+      // store user info in localStorage (or use context)
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // redirect to home page
       router.push("/");
     } catch (err) {
       console.error(err);
@@ -40,7 +42,6 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen bg-[#1A1A1F]">
       <div className="bg-[#1E1E23] p-8 rounded-xl shadow-xl w-96">
         <h1 className="text-2xl font-bold text-white mb-6">Login</h1>
-
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-sm text-gray-300">Username</label>
@@ -51,7 +52,6 @@ export default function LoginPage() {
               className="w-full mt-1 px-3 py-2 rounded-xl bg-[#2A2A36] text-white outline-none"
             />
           </div>
-
           <div>
             <label className="block text-sm text-gray-300">Password</label>
             <input
@@ -61,9 +61,7 @@ export default function LoginPage() {
               className="w-full mt-1 px-3 py-2 rounded-xl bg-[#2A2A36] text-white outline-none"
             />
           </div>
-
           {error && <p className="text-red-400 text-sm">{error}</p>}
-
           <button
             type="submit"
             className="w-full py-2 rounded-xl bg-[#414562] hover:bg-[#545C80] text-white"
