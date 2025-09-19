@@ -86,7 +86,7 @@ export default function ACLviewer() {
 
   return (
     <div className="p-6 bg-[#1A1A1F] rounded-xl h-screen space-y-6">
-      <div className="rounded-xl p-6 bg-[#1E1E23] text-white max-w-7xl mx-auto">
+      <div className="rounded-xl p-6 bg-[#1E1E23] text-white">
         <h2 className="text-2xl mb-4">ACL Viewer</h2>
 
         <div className="flex space-x-2 mb-4 relative">
@@ -108,7 +108,7 @@ export default function ACLviewer() {
               leaveFrom="opacity-100 translate-y-0"
               leaveTo="opacity-0 -translate-y-2"
             >
-              <ul className="absolute w-full mt-1 bg-[#1E1E23] border border-gray-700 rounded-xl overflow-hidden z-10 max-h-60 overflow-auto">
+              <ul className="absolute w-full mt-1 bg-[#1E1E23] border border-gray-700 rounded-xl z-10 max-h-60 overflow-auto">
                 {switches.map(sw => (
                   <li
                     key={sw.name}
@@ -140,7 +140,7 @@ export default function ACLviewer() {
               leaveFrom="opacity-100 translate-y-0"
               leaveTo="opacity-0 -translate-y-2"
             >
-              <ul className="absolute w-full mt-1 bg-[#1E1E23] border border-gray-700 rounded-xl overflow-hidden z-10 max-h-60 overflow-auto">
+              <ul className="absolute w-full mt-1 bg-[#1E1E23] border border-gray-700 rounded-xl z-10 max-h-60 overflow-auto">
                 {files.map(f => (
                   <li
                     key={f}

@@ -118,7 +118,7 @@ export default function SwitchesSection({ switchData }) {
   // ---------------- SNMP Data ----------------
   const fetchSNMP = async () => {
     if (!switchData.snmp?.enabled) {
-      setSnmpData({ status: "SNMP disabled", uptimeSeconds: null, hostname: "-", model: "-" });
+      setSnmpData({ status: "SNMP Disabled", uptimeSeconds: null, hostname: "-", model: "-" });
       return;
     }
     setLoadingUptime(true);
@@ -162,7 +162,7 @@ export default function SwitchesSection({ switchData }) {
               {snmpData.uptimeSeconds !== null
                 ? formatUptime(snmpData.uptimeSeconds)
                 : loadingUptime
-                ? "Loading..."
+                ? "-"
                 : "-"}
             </p>
             <p className="text-xl">Model: {snmpData.model}</p>
