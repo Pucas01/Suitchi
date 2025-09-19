@@ -3,6 +3,7 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const tftp = require("tftp");
+const snmp = require("net-snmp");
 
 const app = express();
 app.use(cors());
@@ -170,7 +171,37 @@ function parseACLFromFile(switchName, fileName) {
   );
 }
 
+// --------------- SNMP ----------------
 
+// SNMP uptime OID
+const UPTIME_OID = "1.3.6.1.2.1.1.3.0";
+const HOSTNAME_OID = "1.3.6.1.2.1.1.5.0";
+const MODEL_OID = "1.3.6.1.2.1.1.1.0";
+
+// Fetch SNMP data
+async function fetchSNMPData(host, community = "zabbix") {
+  return new Promise((resolve, reject) => {
+    const session = snmp.createSession(host, community);
+
+    session.get([UPTIME_OID, HOSTNAME_OID, MODEL_OID], (error, varbinds) => {
+      session.close();
+      if (error) return reject(error);
+
+      const parseVar = (vb) => snmp.isVarbindError(vb) ? null : vb.value.toString();
+
+      const uptimeCs = parseVar(varbinds[0]);
+      const uptimeSeconds = uptimeCs ? Math.floor(parseInt(uptimeCs) / 100) : null;
+
+      const hostname = parseVar(varbinds[1]);
+
+      // Clean up model field
+      const rawModel = parseVar(varbinds[2]) || "";
+      const model = rawModel.match(/\(([^)]+)\)/)?.[1] || rawModel.split(',')[2]?.trim() || rawModel;
+
+      resolve({ uptimeSeconds, hostname, model });
+    });
+  });
+}
 
 // ---------------- API ----------------
 
@@ -178,18 +209,23 @@ function parseACLFromFile(switchName, fileName) {
 app.get("/api/switches", (req, res) => res.json(getSwitches()));
 
 app.post("/api/switches", (req, res) => {
-  const { name, ip, image, files } = req.body;
+  const { name, ip, image, files, snmp } = req.body;
   if (!name || !ip) return res.status(400).json({ error: "Name and IP required" });
 
   let switches = getSwitches();
   if (switches.find(sw => sw.name === name)) return res.status(400).json({ error: "Switch already exists" });
 
-  const newSwitch = { name, ip, image: image || "/images/cisco_switch.jpg", files: normalizeFiles(files, name) };
+  const newSwitch = {
+    name,
+    ip,
+    image: image || "/images/cisco_switch.jpg",
+    files: normalizeFiles(files, name),
+    snmp: snmp || { enabled: true, community: "zabbix", version: "2c" }
+  };
   switches.push(newSwitch);
   saveSwitches(switches);
 
   fs.mkdirSync(path.join(LOCAL_DIR, name), { recursive: true });
-
   res.json({ success: true, switch: newSwitch });
 });
 
@@ -209,14 +245,20 @@ app.delete("/api/switches/:name", (req, res) => {
 
 app.put("/api/switches/:name", (req, res) => {
   const { name } = req.params;
-  const { name: newName, ip, image, files } = req.body;
+  const { name: newName, ip, image, files, snmp } = req.body;
 
   let switches = getSwitches();
   const index = switches.findIndex(sw => sw.name === name);
   if (index === -1) return res.status(404).json({ error: "Switch not found" });
 
   const oldName = switches[index].name;
-  switches[index] = { name: newName, ip, image, files: normalizeFiles(files, newName) };
+  switches[index] = {
+    name: newName,
+    ip,
+    image,
+    files: normalizeFiles(files, newName),
+    snmp: snmp || switches[index].snmp || { enabled: true, community: "zabbix", version: "2c" }
+  };
   saveSwitches(switches);
 
   const oldDir = path.join(LOCAL_DIR, oldName);
@@ -381,6 +423,26 @@ app.delete("/api/acl", (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true });
   });
+});
+
+// SNMP endpoint
+app.get("/api/snmp/:switchName", async (req, res) => {
+  const { switchName } = req.params;
+  const sw = getSwitches().find(s => s.name === switchName);
+  if (!sw) return res.status(404).json({ error: "Switch not found" });
+
+  if (!sw.snmp?.enabled) {
+    return res.json({ uptimeSeconds: null, hostname: null, model: null, status: "disabled" });
+  }
+
+  try {
+    const { uptimeSeconds, hostname, model } = await fetchSNMPData(sw.ip, sw.snmp.community);
+    const status = uptimeSeconds !== null ? "online" : "offline";
+    res.json({ uptimeSeconds, hostname, model, status });
+  } catch (err) {
+    console.error("SNMP error:", err);
+    res.json({ uptimeSeconds: null, hostname: null, model: null, status: "offline" });
+  }
 });
 
 // ---------------- Start server ----------------

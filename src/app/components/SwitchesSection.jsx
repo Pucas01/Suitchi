@@ -4,18 +4,40 @@ import { useState, useEffect } from "react";
 
 export default function SwitchesSection({ switchData }) {
   const { name, ip, image } = switchData;
+
+  // ---------------- States ----------------
   const [backups, setBackups] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingBackups, setLoadingBackups] = useState(false);
   const [deletingFile, setDeletingFile] = useState(null);
   const [viewingFile, setViewingFile] = useState(null);
   const [fileContent, setFileContent] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
 
+  const [snmpData, setSnmpData] = useState({
+    uptimeSeconds: null,
+    hostname: "-",
+    model: "-",
+    status: switchData.snmp?.enabled ? "unknown" : "disabled",
+  });
+  const [loadingUptime, setLoadingUptime] = useState(false);
+
+  // ---------------- Helpers ----------------
+  function formatUptime(seconds) {
+    if (seconds === null) return "-";
+    const days = Math.floor(seconds / 86400);
+    seconds %= 86400;
+    const hours = Math.floor(seconds / 3600);
+    seconds %= 3600;
+    const minutes = Math.floor(seconds / 60);
+    seconds %= 60;
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+  }
+
+  // ---------------- Fetch Functions ----------------
   const fetchBackups = async () => {
     try {
       const res = await fetch("http://localhost:4000/api/backups");
       const data = await res.json();
-      // Expecting data[name] to be an array of objects { name, lastChange }
       setBackups(data[name] || []);
     } catch (err) {
       console.error("Error fetching backups:", err);
@@ -23,12 +45,8 @@ export default function SwitchesSection({ switchData }) {
     }
   };
 
-  useEffect(() => {
-    fetchBackups();
-  }, [name]);
-
   const fetchMissingBackups = async () => {
-    setLoading(true);
+    setLoadingBackups(true);
     try {
       const res = await fetch(`http://localhost:4000/api/fetch-missing/${name}`);
       if (!res.ok) {
@@ -39,7 +57,7 @@ export default function SwitchesSection({ switchData }) {
     } catch (err) {
       console.error("Error fetching missing backups:", err);
     } finally {
-      setLoading(false);
+      setLoadingBackups(false);
     }
   };
 
@@ -90,13 +108,46 @@ export default function SwitchesSection({ switchData }) {
     setTimeout(() => {
       setViewingFile(null);
       setFileContent("");
-    }, 300); // match fade-out duration
+    }, 300);
   };
 
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) closeModal();
   };
 
+  // ---------------- SNMP Data ----------------
+  const fetchSNMP = async () => {
+    if (!switchData.snmp?.enabled) {
+      setSnmpData({ status: "SNMP disabled", uptimeSeconds: null, hostname: "-", model: "-" });
+      return;
+    }
+    setLoadingUptime(true);
+    try {
+      const res = await fetch(`http://localhost:4000/api/snmp/${switchData.name}`);
+      const data = await res.json();
+      setSnmpData({
+        uptimeSeconds: data.uptimeSeconds,
+        hostname: data.hostname || "-",
+        model: data.model || "-",
+        status: data.status || "offline",
+      });
+    } catch (err) {
+      console.error("Error fetching SNMP data:", err);
+      setSnmpData({ uptimeSeconds: null, hostname: "-", model: "-", status: "offline" });
+    } finally {
+      setLoadingUptime(false);
+    }
+  };
+
+  // ---------------- Effects ----------------
+  useEffect(() => {
+    fetchBackups();
+    fetchSNMP();
+    const interval = setInterval(fetchSNMP, 3000); // refresh every 60s
+    return () => clearInterval(interval);
+  }, [name]);
+
+  // ---------------- Render ----------------
   return (
     <div className="flex-1 rounded-xl p-6 h-screen bg-[#1A1A1F] overflow-auto">
       {/* Switch Info */}
@@ -105,12 +156,24 @@ export default function SwitchesSection({ switchData }) {
           <div>
             <p className="text-2xl mb-2">{name}</p>
             <p className="text-xl">IP: {ip}</p>
-            <p className="text-xl">Status: Online</p>
-            <p className="text-xl">Uptime: 12 days 16:01:23</p>
-            <p className="text-xl">Model: Cisco SG550XG-48T-K9</p>
-            <p className="text-xl">IOS Version: 3.06.03</p>
+            <p className="text-xl">Status: {snmpData.status}</p>
+            <p className="text-xl">
+              Uptime:{" "}
+              {snmpData.uptimeSeconds !== null
+                ? formatUptime(snmpData.uptimeSeconds)
+                : loadingUptime
+                ? "Loading..."
+                : "-"}
+            </p>
+            <p className="text-xl">Model: {snmpData.model}</p>
+            <p className="text-xl">Hostname: {snmpData.hostname}</p>
           </div>
-          <p className="text-sm text-gray-400">Last checked: just now</p>
+          {/* Only show Last checked if SNMP is enabled */}
+            {switchData.snmp?.enabled && (
+            <p className="text-sm text-gray-400">
+              Last checked: {snmpData.uptimeSeconds !== null ? "just now" : "-"}
+            </p>
+              )}
         </div>
 
         <div className="h-full">
@@ -128,14 +191,14 @@ export default function SwitchesSection({ switchData }) {
           <p className="text-2xl">Saved Backups</p>
           <button
             className={`px-4 py-2 rounded ${
-              loading
+              loadingBackups
                 ? "bg-gray-500 cursor-not-allowed"
                 : "bg-[#414562] hover:bg-[#545C80] rounded-xl text-center transition-colors duration-200 cursor-pointer transform"
             } text-white`}
             onClick={fetchMissingBackups}
-            disabled={loading}
+            disabled={loadingBackups}
           >
-            {loading ? "Fetching..." : `Fetch Missing for ${name}`}
+            {loadingBackups ? "Fetching..." : `Fetch Missing for ${name}`}
           </button>
         </div>
 
@@ -185,7 +248,7 @@ export default function SwitchesSection({ switchData }) {
         )}
       </div>
 
-      {/* Modal (always mounted for animation) */}
+      {/* Modal */}
       <div
         className={`fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 transition-opacity duration-300 ${
           modalVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
@@ -206,7 +269,8 @@ export default function SwitchesSection({ switchData }) {
           {viewingFile && (
             <>
               <h2 className="text-xl mb-4">{viewingFile}</h2>
-              {fileContent.startsWith("http") && fileContent.match(/\.(png|jpg|jpeg|gif)$/i) ? (
+              {fileContent.startsWith("http") &&
+              fileContent.match(/\.(png|jpg|jpeg|gif)$/i) ? (
                 <img src={fileContent} alt={viewingFile} className="max-w-full max-h-[70vh]" />
               ) : (
                 <pre className="bg-[#1E1E23] p-4 rounded-xl text-sm overflow-auto">{fileContent}</pre>

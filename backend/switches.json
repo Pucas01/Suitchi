@@ -1,11 +1,15 @@
 [
   {
-    "name": "INT02-CSW",
+    "name": "INT01-CSW",
     "ip": "172.16.12.254",
-    "image": "https://cf-images.dustin.eu/cdn-cgi/image/fit=contain,format=auto,quality=75,width=828,fit=contain/image/d200001001720807/cisco-cbs220-24g-4sfp-smart-switch.png",
+    "image": "https://www.rogerperkin.co.uk/wp-content/uploads/2018/05/cisco-3850-ios-upgrade-roger-perkin-ccie.jpg",
     "files": [
       "INT-CS.cfg"
-    ]
+    ],
+    "snmp": {
+      "enabled": true,
+      "community": "zabbix"
+    }
   },
   {
     "name": "Asa Mitaka",
@@ -14,6 +18,11 @@
     "files": [
       "Asuka.png",
       "Asuka2.png"
-    ]
+    ],
+    "snmp": {
+      "enabled": false,
+      "community": "",
+      "version": "2c"
+    }
   }
 ]
