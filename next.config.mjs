@@ -6,6 +6,10 @@ const nextConfig = {
         source: '/api/:path*',          // frontend request
         destination: 'http://localhost:4000/api/:path*', // backend server
       },
+      {
+        source: '/downloads/:path*',
+        destination: 'http://localhost:4000/downloads/:path*',
+      },
     ];
   },
 };
