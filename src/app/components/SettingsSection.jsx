@@ -11,7 +11,7 @@ export default function SettingsSection({ refreshSwitches }) {
 
   const fetchSwitches = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/switches");
+      const res = await fetch("/api/switches");
       const data = await res.json();
       setSwitches(data);
     } catch (err) {
@@ -21,7 +21,7 @@ export default function SettingsSection({ refreshSwitches }) {
 
   const fetchConfig = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/config/tftp");
+      const res = await fetch("/api/config/tftp");
       if (res.ok) {
         const data = await res.json();
         setTftpServer(data.config?.tftpServer || "");
@@ -39,7 +39,7 @@ export default function SettingsSection({ refreshSwitches }) {
   const saveTftpServer = async () => {
     if (!tftpServer) return alert("TFTP server IP required");
     try {
-      const res = await fetch("http://localhost:4000/api/config/tftp", {
+      const res = await fetch("/api/config/tftp", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tftpServer }),
@@ -63,7 +63,7 @@ export default function SettingsSection({ refreshSwitches }) {
         ? newSwitch.files.split(",").map(f => f.trim()).filter(Boolean)
         : [];
 
-      const res = await fetch("http://localhost:4000/api/switches", {
+      const res = await fetch("/api/switches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...newSwitch, files: filesArray }),
@@ -85,7 +85,7 @@ export default function SettingsSection({ refreshSwitches }) {
   const deleteSwitch = async (name) => {
     if (!confirm(`Delete switch "${name}"? This will remove all backups.`)) return;
     try {
-      const res = await fetch(`http://localhost:4000/api/switches/${name}`, { method: "DELETE" });
+      const res = await fetch(`/api/switches/${name}`, { method: "DELETE" });
       if (!res.ok) {
         const errData = await res.json();
         alert(errData.error || "Failed to delete switch");
@@ -117,7 +117,7 @@ export default function SettingsSection({ refreshSwitches }) {
         ? editingSwitch.files.split(",").map(f => f.trim()).filter(Boolean)
         : [];
 
-      const res = await fetch(`http://localhost:4000/api/switches/${editingSwitch.originalName}`, {
+      const res = await fetch(`/api/switches/${editingSwitch.originalName}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...editingSwitch, files: filesArray }),

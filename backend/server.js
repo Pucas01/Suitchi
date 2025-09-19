@@ -23,5 +23,24 @@ app.use("/api/backups", backupsRoutes)
 app.use("/api", usersRoutes);
 
 
+const os = require("os");
+
 const PORT = 4000;
-app.listen(PORT, () => console.log(`🚀 Backend running on http://localhost:${PORT}`));
+const HOST = "0.0.0.0";
+
+function getServerIP() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === "IPv4" && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return "localhost";
+}
+
+app.listen(PORT, HOST, () => {
+  const serverIP = getServerIP();
+  console.log(`🚀 Backend running on http://${serverIP}:${PORT}`);
+});

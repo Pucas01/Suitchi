@@ -36,7 +36,7 @@ export default function SwitchesSection({ switchData }) {
   // ---------------- Fetch Functions ----------------
   const fetchBackups = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/backups");
+      const res = await fetch("/api/backups");
       const data = await res.json();
       setBackups(data[name] || []);
     } catch (err) {
@@ -48,7 +48,7 @@ export default function SwitchesSection({ switchData }) {
   const fetchMissingBackups = async () => {
     setLoadingBackups(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/fetch-missing/${name}`);
+      const res = await fetch(`/api/fetch-missing/${name}`);
       if (!res.ok) {
         const errData = await res.json();
         alert(errData.error || "Failed to fetch missing backups");
@@ -65,7 +65,7 @@ export default function SwitchesSection({ switchData }) {
     if (!confirm(`Delete "${fileName}" for switch ${name}?`)) return;
     setDeletingFile(fileName);
     try {
-      const res = await fetch(`http://localhost:4000/api/backups/${name}/${fileName}`, {
+      const res = await fetch(`/api/backups/${name}/${fileName}`, {
         method: "DELETE",
       });
       if (!res.ok) {
@@ -82,7 +82,7 @@ export default function SwitchesSection({ switchData }) {
   };
 
   const viewFile = async (fileName) => {
-    const fileUrl = `http://localhost:4000/downloads/${name}/${fileName}`;
+    const fileUrl = `/downloads/${name}/${fileName}`;
     if (fileName.endsWith(".txt") || fileName.endsWith(".cfg")) {
       try {
         const res = await fetch(fileUrl);
@@ -123,7 +123,7 @@ export default function SwitchesSection({ switchData }) {
     }
     setLoadingUptime(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/snmp/${switchData.name}`);
+      const res = await fetch(`/api/snmp/${switchData.name}`);
       const data = await res.json();
       setSnmpData({
         uptimeSeconds: data.uptimeSeconds,
@@ -221,7 +221,7 @@ export default function SwitchesSection({ switchData }) {
                       View
                     </button>
                     <a
-                      href={`http://localhost:4000/downloads/${name}/${backup.name}`}
+                      href={`/downloads/${name}/${backup.name}`}
                       className="px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white text-center cursor-pointer transform transition-colors duration-200"
                       target="_blank"
                       rel="noopener noreferrer"

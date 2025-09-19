@@ -21,12 +21,10 @@ export default function Page() {
     }
   }, []);
 
-  if (!localStorage.getItem("user")) return null; // prevent flicker
-
   // ---------------- Fetch Switches ----------------
   const fetchSwitches = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/switches");
+      const res = await fetch("/api/switches");
       const data = await res.json();
       setSwitches(data);
     } catch (err) {

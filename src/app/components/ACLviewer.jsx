@@ -19,7 +19,7 @@ export default function ACLviewer() {
 
   // Load switches on mount
   useEffect(() => {
-    fetch("http://localhost:4000/api/switches")
+    fetch("/api/switches")
       .then(res => res.json())
       .then(data => setSwitches(data))
       .catch(console.error);
@@ -53,7 +53,7 @@ export default function ACLviewer() {
   const fetchACLs = async () => {
     if (!switchName || !fileName) return;
     try {
-      const res = await fetch(`http://localhost:4000/api/acl/${switchName}/${fileName}`);
+      const res = await fetch(`/api/acl/${switchName}/${fileName}`);
       const data = await res.json();
       setAclRules(Array.isArray(data) ? data : []);
       setShowTable(false);
@@ -67,7 +67,7 @@ export default function ACLviewer() {
 
   const clearDB = async () => {
     try {
-      await fetch("http://localhost:4000/api/acl", { method: "DELETE" });
+      await fetch("/api/acl", { method: "DELETE" });
       setAclRules([]);
       setShowTable(false);
       alert("Database cleared!");
