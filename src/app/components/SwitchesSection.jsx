@@ -15,6 +15,7 @@ export default function SwitchesSection({ switchData }) {
     try {
       const res = await fetch("http://localhost:4000/api/backups");
       const data = await res.json();
+      // Expecting data[name] to be an array of objects { name, lastChange }
       setBackups(data[name] || []);
     } catch (err) {
       console.error("Error fetching backups:", err);
@@ -42,11 +43,11 @@ export default function SwitchesSection({ switchData }) {
     }
   };
 
-  const deleteBackup = async (file) => {
-    if (!confirm(`Delete "${file}" for switch ${name}?`)) return;
-    setDeletingFile(file);
+  const deleteBackup = async (fileName) => {
+    if (!confirm(`Delete "${fileName}" for switch ${name}?`)) return;
+    setDeletingFile(fileName);
     try {
-      const res = await fetch(`http://localhost:4000/api/backups/${name}/${file}`, {
+      const res = await fetch(`http://localhost:4000/api/backups/${name}/${fileName}`, {
         method: "DELETE",
       });
       if (!res.ok) {
@@ -62,9 +63,9 @@ export default function SwitchesSection({ switchData }) {
     }
   };
 
-  const viewFile = async (file) => {
-    const fileUrl = `http://localhost:4000/downloads/${name}/${file}`;
-    if (file.endsWith(".txt") || file.endsWith(".cfg")) {
+  const viewFile = async (fileName) => {
+    const fileUrl = `http://localhost:4000/downloads/${name}/${fileName}`;
+    if (fileName.endsWith(".txt") || fileName.endsWith(".cfg")) {
       try {
         const res = await fetch(fileUrl);
         const text = await res.text();
@@ -74,13 +75,13 @@ export default function SwitchesSection({ switchData }) {
         alert("Failed to load file");
         return;
       }
-    } else if (file.match(/\.(png|jpg|jpeg|gif)$/i)) {
+    } else if (fileName.match(/\.(png|jpg|jpeg|gif)$/i)) {
       setFileContent(fileUrl);
     } else {
       alert("Unsupported file type for preview");
       return;
     }
-    setViewingFile(file);
+    setViewingFile(fileName);
     setModalVisible(true);
   };
 
@@ -124,7 +125,7 @@ export default function SwitchesSection({ switchData }) {
       {/* Backup Status */}
       <div className="rounded-xl p-6 bg-[#1E1E23] flex flex-col">
         <div className="flex justify-between items-center mb-4">
-          <p className="text-2xl">Saved Backup</p>
+          <p className="text-2xl">Saved Backups</p>
           <button
             className={`px-4 py-2 rounded ${
               loading
@@ -142,37 +143,42 @@ export default function SwitchesSection({ switchData }) {
           <p className="text-gray-400">No backups available.</p>
         ) : (
           <ul className="space-y-2">
-            {backups.map((file) => (
+            {backups.map((backup) => (
               <li
-                key={file}
-                className="flex justify-between items-center p-2 rounded-xl bg-[#1E1E23]"
+                key={backup.name}
+                className="flex flex-col p-2 rounded-xl bg-[#1E1E23]"
               >
-                <span>{file}</span>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => viewFile(file)}
-                    className="px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transform transition-colors duration-200"
-                  >
-                    View
-                  </button>
-                  <a
-                    href={`http://localhost:4000/downloads/${name}/${file}`}
-                    className="px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white text-center cursor-pointer transform transition-colors duration-200"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Download
-                  </a>
-                  <button
-                    onClick={() => deleteBackup(file)}
-                    className={`px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transform transition-colors duration-200 ${
-                      deletingFile === file ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
-                    disabled={deletingFile === file}
-                  >
-                    {deletingFile === file ? "Deleting..." : "Delete"}
-                  </button>
+                <div className="flex justify-between items-center w-full">
+                  <span className="font-medium">{backup.name}</span>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => viewFile(backup.name)}
+                      className="px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transform transition-colors duration-200"
+                    >
+                      View
+                    </button>
+                    <a
+                      href={`http://localhost:4000/downloads/${name}/${backup.name}`}
+                      className="px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white text-center cursor-pointer transform transition-colors duration-200"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Download
+                    </a>
+                    <button
+                      onClick={() => deleteBackup(backup.name)}
+                      className={`px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transform transition-colors duration-200 ${
+                        deletingFile === backup.name ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                      disabled={deletingFile === backup.name}
+                    >
+                      {deletingFile === backup.name ? "Deleting..." : "Delete"}
+                    </button>
+                  </div>
                 </div>
+                <p className="text-gray-400 text-sm mt-1">
+                  Last change: {backup.lastChange || "-"}
+                </p>
               </li>
             ))}
           </ul>

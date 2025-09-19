@@ -228,13 +228,31 @@ app.put("/api/switches/:name", (req, res) => {
 
 // Backups
 app.use("/downloads", express.static(LOCAL_DIR));
+
 app.get("/api/backups", (req, res) => {
   const switches = getSwitches();
   const result = {};
+
   switches.forEach(sw => {
     const dir = path.join(LOCAL_DIR, sw.name);
-    result[sw.name] = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+    const backups = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+
+    // Map each file to include last configuration change
+    const backupsWithMeta = backups.map(file => {
+      const filePath = path.join(dir, file);
+      let lastChange = "-";
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, "utf-8");
+        // Look for a line like "Last configuration change at 08:35:39 UTC Wed Sep 17 2025 by Lucas"
+        const match = content.match(/Last configuration change at (.+)/);
+        if (match) lastChange = match[1];
+      }
+      return { name: file, lastChange };
+    });
+
+    result[sw.name] = backupsWithMeta;
   });
+
   res.json(result);
 });
 
