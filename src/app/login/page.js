@@ -7,16 +7,19 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
-      const res = await fetch("/api/login", {
+      const res = await fetch("/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // ✅ important for session cookies
         body: JSON.stringify({ username, password }),
       });
 
@@ -24,17 +27,20 @@ export default function LoginPage() {
 
       if (!res.ok) {
         setError(data.error || "Login failed");
+        setLoading(false);
         return;
       }
 
-      // store user info in localStorage (or use context)
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // Optionally fetch user info
+      // const meRes = await fetch("/api/users/me", { credentials: "include" });
+      // const meData = await meRes.json();
 
-      // redirect to home page
-      router.push("/");
+      setLoading(false);
+      router.push("/"); // redirect to main page
     } catch (err) {
       console.error(err);
       setError("Something went wrong");
+      setLoading(false);
     }
   };
 
@@ -64,9 +70,10 @@ export default function LoginPage() {
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button
             type="submit"
-            className="w-full py-2 rounded-xl bg-[#414562] hover:bg-[#545C80] text-white"
+            disabled={loading}
+            className="w-full py-2 rounded-xl bg-[#414562] hover:bg-[#545C80] text-white disabled:opacity-50"
           >
-            Log In
+            {loading ? "Logging in..." : "Log In"}
           </button>
         </form>
       </div>

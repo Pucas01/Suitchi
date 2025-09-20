@@ -9,94 +9,106 @@ export default function SettingsSection({ refreshSwitches }) {
   const [editingSwitch, setEditingSwitch] = useState(null); // {name, ip, image, files, snmp, originalName}
   const [tftpServer, setTftpServer] = useState("");
 
-  const fetchSwitches = async () => {
-    try {
-      const res = await fetch("/api/switches");
-      const data = await res.json();
-      setSwitches(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+const fetchSwitches = async () => {
+  try {
+    const res = await fetch("/api/switches", { credentials: "include" });
+    if (!res.ok) throw new Error("Failed to fetch switches");
+    const data = await res.json();
+    setSwitches(data);
+  } catch (err) {
+    console.error(err);
+  }
+};
 
-  const fetchConfig = async () => {
-    try {
-      const res = await fetch("/api/config/tftp");
-      if (res.ok) {
-        const data = await res.json();
-        setTftpServer(data.config?.tftpServer || "");
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
+
+const fetchConfig = async () => {
+  try {
+    const res = await fetch("/api/tftp", { credentials: "include" });
+    if (!res.ok) throw new Error("Failed to fetch config");
+    const data = await res.json();
+    setTftpServer(data.config?.tftpServer || "");
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 
   useEffect(() => {
     fetchSwitches();
     fetchConfig();
   }, []);
 
-  const saveTftpServer = async () => {
-    if (!tftpServer) return alert("TFTP server IP required");
-    try {
-      const res = await fetch("/api/config/tftp", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tftpServer }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        alert(data.error || "Failed to save TFTP server");
-      } else {
-        alert("TFTP server saved!");
-      }
-    } catch (err) {
-      console.error(err);
+const saveTftpServer = async () => {
+  if (!tftpServer) return alert("TFTP server IP required");
+  try {
+    const res = await fetch("/api/tftp", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ tftpServer }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || "Failed to save TFTP server");
+    } else {
+      alert("TFTP server saved!");
     }
-  };
+  } catch (err) {
+    console.error(err);
+  }
+};
 
-  const addSwitch = async () => {
-    if (!newSwitch.name || !newSwitch.ip) return alert("Name and IP required");
-    setLoading(true);
-    try {
-      const filesArray = newSwitch.files
-        ? newSwitch.files.split(",").map(f => f.trim()).filter(Boolean)
-        : [];
 
-      const res = await fetch("/api/switches", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...newSwitch, files: filesArray }),
-      });
-      if (!res.ok) {
-        const errData = await res.json();
-        alert(errData.error || "Failed to add switch");
-      } else {
-        setNewSwitch({ name: "", ip: "", image: "", files: "", snmp: { enabled: true, community: "zabbix" } });
-        fetchSwitches();
-        refreshSwitches?.();
-      }
-    } catch (err) {
-      console.error(err);
+const addSwitch = async () => {
+  if (!newSwitch.name || !newSwitch.ip) return alert("Name and IP required");
+  setLoading(true);
+  try {
+    const filesArray = newSwitch.files
+      ? newSwitch.files.split(",").map(f => f.trim()).filter(Boolean)
+      : [];
+
+    const res = await fetch("/api/switches", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ ...newSwitch, files: filesArray }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      alert(errData.error || "Failed to add switch");
+    } else {
+      setNewSwitch({ name: "", ip: "", image: "", files: "", snmp: { enabled: true, community: "zabbix" } });
+      fetchSwitches();
+      refreshSwitches?.();
     }
+  } catch (err) {
+    console.error(err);
+  } finally {
     setLoading(false);
-  };
+  }
+};
 
-  const deleteSwitch = async (name) => {
-    if (!confirm(`Delete switch "${name}"? This will remove all backups.`)) return;
-    try {
-      const res = await fetch(`/api/switches/${name}`, { method: "DELETE" });
-      if (!res.ok) {
-        const errData = await res.json();
-        alert(errData.error || "Failed to delete switch");
-      } else {
-        fetchSwitches();
-        refreshSwitches?.();
-      }
-    } catch (err) {
-      console.error(err);
+
+const deleteSwitch = async (name) => {
+  if (!confirm(`Delete switch "${name}"? This will remove all backups.`)) return;
+  try {
+    const res = await fetch(`/api/switches/${name}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const errData = await res.json();
+      alert(errData.error || "Failed to delete switch");
+    } else {
+      fetchSwitches();
+      refreshSwitches?.();
     }
-  };
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 
   const startEditing = (sw) => {
     setEditingSwitch({
@@ -109,32 +121,36 @@ export default function SettingsSection({ refreshSwitches }) {
 
   const cancelEditing = () => setEditingSwitch(null);
 
-  const saveSwitch = async () => {
-    if (!editingSwitch.name || !editingSwitch.ip) return alert("Name and IP required");
-    setLoading(true);
-    try {
-      const filesArray = editingSwitch.files
-        ? editingSwitch.files.split(",").map(f => f.trim()).filter(Boolean)
-        : [];
+const saveSwitch = async () => {
+  if (!editingSwitch.name || !editingSwitch.ip) return alert("Name and IP required");
+  setLoading(true);
+  try {
+    const filesArray = editingSwitch.files
+      ? editingSwitch.files.split(",").map(f => f.trim()).filter(Boolean)
+      : [];
 
-      const res = await fetch(`/api/switches/${editingSwitch.originalName}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...editingSwitch, files: filesArray }),
-      });
-      if (!res.ok) {
-        const errData = await res.json();
-        alert(errData.error || "Failed to update switch");
-      } else {
-        setEditingSwitch(null);
-        fetchSwitches();
-        refreshSwitches?.();
-      }
-    } catch (err) {
-      console.error(err);
+    const res = await fetch(`/api/switches/${editingSwitch.originalName}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ ...editingSwitch, files: filesArray }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      alert(errData.error || "Failed to update switch");
+    } else {
+      setEditingSwitch(null);
+      fetchSwitches();
+      refreshSwitches?.();
     }
+  } catch (err) {
+    console.error(err);
+  } finally {
     setLoading(false);
-  };
+  }
+};
+
 
   return (
     <div className="p-6 bg-[#1A1A1F] rounded-xl space-y-6">

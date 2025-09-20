@@ -7,24 +7,43 @@ const tftpRoutes = require("./routes/tftp");
 const aclRoutes = require("./routes/acl");
 const snmpRoutes = require("./routes/snmp");
 const usersRoutes = require("./routes/users");
-const fs = require("fs");
-const path = require("path");
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-app.use("/api/switches", switchesRoutes);
+const requireAuth = require("./authMiddleware");
 const { LOCAL_DIR } = require("./helpers");
-app.use("/downloads", express.static(LOCAL_DIR));
-app.use("/api", tftpRoutes);
-app.use("/api/acl", aclRoutes);
-app.use("/api/snmp", snmpRoutes);
-app.use("/api/backups", backupsRoutes)
-app.use("/api", usersRoutes);
-
-
 const os = require("os");
 
+const app = express();
+
+// --- Middleware ---
+app.use(cors({
+  origin: "http://localhost:3000", // frontend URL
+  credentials: true,               // allow cookies
+}));
+app.use(express.json());
+
+app.use(session({
+  secret: "supersecretkey",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: false, // true if using HTTPS
+    maxAge: 1000 * 60 * 60, // 1 hour
+  }
+}));
+
+
+// --- Routes ---
+app.use("/api/switches", requireAuth, switchesRoutes);
+app.use("/api/backups", requireAuth, backupsRoutes);
+app.use("/api/tftp", requireAuth, tftpRoutes);
+app.use("/api/acl", requireAuth, aclRoutes);
+app.use("/api/snmp", requireAuth, snmpRoutes);
+app.use("/api/users", usersRoutes);
+
+// Protect downloads
+app.use("/downloads", requireAuth, express.static(LOCAL_DIR));
+
+// --- Server startup ---
 const PORT = 4000;
 const HOST = "0.0.0.0";
 

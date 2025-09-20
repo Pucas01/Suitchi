@@ -17,8 +17,25 @@ router.post("/login", (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: "Invalid username or password" });
 
-    // optional: you could create a session here
+    // ✅ Save user info into session
+    req.session.user = { id: user.id, username: user.username };
+
     res.json({ success: true, user: { id: user.id, username: user.username } });
+  });
+});
+
+// ✅ Check if logged in
+router.get("/me", (req, res) => {
+  if (!req.session?.user) {
+    return res.status(401).json({ error: "Not logged in" });
+  }
+  res.json({ user: req.session.user });
+});
+
+// ✅ Add a logout endpoint
+router.post("/logout", (req, res) => {
+  req.session.destroy(() => {
+    res.json({ success: true });
   });
 });
 

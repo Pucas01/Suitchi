@@ -6,8 +6,8 @@ const tftp = require("tftp");
 const { getSwitches, getConfig, saveConfig, normalizeFiles, LOCAL_DIR } = require("../helpers");
 
 
-router.get("/config/tftp", (req, res) => res.json({ config: getConfig() }));
-router.put("config/tftp", (req, res) => {
+router.get("/", (req, res) => res.json({ config: getConfig() }));
+router.put("/", (req, res) => {
   const { tftpServer } = req.body;
   if (!tftpServer) return res.status(400).json({ error: "TFTP server IP required" });
   const config = getConfig();

@@ -36,7 +36,7 @@ export default function SwitchesSection({ switchData }) {
   // ---------------- Fetch Functions ----------------
   const fetchBackups = async () => {
     try {
-      const res = await fetch("/api/backups");
+      const res = await fetch("/api/backups", { credentials: "include" });
       const data = await res.json();
       setBackups(data[name] || []);
     } catch (err) {
@@ -48,7 +48,7 @@ export default function SwitchesSection({ switchData }) {
   const fetchMissingBackups = async () => {
     setLoadingBackups(true);
     try {
-      const res = await fetch(`/api/fetch-missing/${name}`);
+      const res = await fetch(`/api/tftp/fetch-missing/${name}`, { credentials: "include" });
       if (!res.ok) {
         const errData = await res.json();
         alert(errData.error || "Failed to fetch missing backups");
@@ -67,6 +67,7 @@ export default function SwitchesSection({ switchData }) {
     try {
       const res = await fetch(`/api/backups/${name}/${fileName}`, {
         method: "DELETE",
+        credentials: "include",
       });
       if (!res.ok) {
         const errData = await res.json();
@@ -81,27 +82,36 @@ export default function SwitchesSection({ switchData }) {
     }
   };
 
-  const viewFile = async (fileName) => {
-    const fileUrl = `/downloads/${name}/${fileName}`;
+const viewFile = async (fileName) => {
+  const fileUrl = `/downloads/${name}/${fileName}`;
+
+  try {
+    const res = await fetch(fileUrl, { credentials: "include" }); // 👈 include session cookie
+
+    if (res.status === 401) {
+      // Not logged in anymore → kick back to login
+      window.location.href = "/login";
+      return;
+    }
+
+    if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
+
     if (fileName.endsWith(".txt") || fileName.endsWith(".cfg")) {
-      try {
-        const res = await fetch(fileUrl);
-        const text = await res.text();
-        setFileContent(text);
-      } catch (err) {
-        console.error(err);
-        alert("Failed to load file");
-        return;
-      }
-    } else if (fileName.match(/\.(png|jpg|jpeg|gif)$/i)) {
-      setFileContent(fileUrl);
+      const text = await res.text();
+      setFileContent(text);
     } else {
       alert("Unsupported file type for preview");
       return;
     }
+
     setViewingFile(fileName);
     setModalVisible(true);
-  };
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to load file");
+  }
+};
 
   const closeModal = () => {
     setModalVisible(false);
@@ -123,7 +133,7 @@ export default function SwitchesSection({ switchData }) {
     }
     setLoadingUptime(true);
     try {
-      const res = await fetch(`/api/snmp/${switchData.name}`);
+      const res = await fetch(`/api/snmp/${switchData.name}`, { credentials: "include" });
       const data = await res.json();
       setSnmpData({
         uptimeSeconds: data.uptimeSeconds,

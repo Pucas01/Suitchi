@@ -7,30 +7,50 @@ import ACLviewer from "./components/ACLviewer";
 import SettingsSection from "./components/SettingsSection";
 
 export default function Page() {
-  const [active, setActive] = useState(null); // switch object or "ACL"/"Settings"
+  const [active, setActive] = useState(null);
   const [popping, setPopping] = useState(null);
   const [transitioning, setTransitioning] = useState(false);
   const [switches, setSwitches] = useState([]);
+  const [user, setUser] = useState(null); // optional user info
   const router = useRouter();
 
   // ---------------- Auth Guard ----------------
   useEffect(() => {
-    const user = localStorage.getItem("user");
-    if (!user) {
-      router.replace("/login"); // redirect if not logged in
-    }
-  }, []);
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("/api/users/me", { credentials: "include" });
+        if (!res.ok) {
+          router.replace("/login");
+          return;
+        }
+        const data = await res.json();
+        setUser(data.user); // store logged-in user info
+      } catch (err) {
+        console.error(err);
+        router.replace("/login");
+      }
+    };
+
+    checkAuth();
+  }, [router]);
 
   // ---------------- Fetch Switches ----------------
-  const fetchSwitches = async () => {
-    try {
-      const res = await fetch("/api/switches");
-      const data = await res.json();
-      setSwitches(data);
-    } catch (err) {
-      console.error("Error fetching switches:", err);
+const fetchSwitches = async () => {
+  try {
+    const res = await fetch("/api/switches", { credentials: "include" }); // ✅ include cookies
+    if (res.status === 401) {
+      // session expired or not logged in
+      router.replace("/login");
+      return;
     }
-  };
+
+    const data = await res.json();
+    setSwitches(data);
+  } catch (err) {
+    console.error("Error fetching switches:", err);
+    router.replace("/login");
+  }
+};
 
   useEffect(() => {
     fetchSwitches();
@@ -41,7 +61,7 @@ export default function Page() {
     const swName = typeof sw === "string" ? sw : sw.name;
     const activeName = typeof active === "string" ? active : active?.name;
 
-    if (activeName === swName) return; // same page, do nothing
+    if (activeName === swName) return;
 
     setPopping(swName);
     setTransitioning(true);
@@ -50,13 +70,24 @@ export default function Page() {
       setActive(sw);
       setTransitioning(false);
       setPopping(null);
-    }, 200); // match transition duration
+    }, 200);
   };
 
   // ---------------- Logout ----------------
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    router.replace("/login");
+  const handleLogout = async () => {
+    try {
+      const res = await fetch("/api/users/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Logout failed");
+
+      setUser(null);
+      router.replace("/login");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to log out");
+    }
   };
 
   // ---------------- Render ----------------
@@ -121,7 +152,7 @@ export default function Page() {
               active?.name === sw.name && (
                 <SwitchesSection
                   key={sw.name}
-                  switchData={sw} // full object {name, ip, image}
+                  switchData={sw}
                 />
               )
           )}
