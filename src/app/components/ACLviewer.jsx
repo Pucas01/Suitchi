@@ -1,7 +1,10 @@
 "use client";
 
+<div><Toaster/></div>
+
 import { useState, useEffect, useRef, Fragment } from "react";
 import { Transition } from "@headlessui/react";
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function ACLviewer() {
   const [switches, setSwitches] = useState([]);
@@ -70,7 +73,14 @@ export default function ACLviewer() {
       await fetch("/api/acl", { credentials: "include" }, { method: "DELETE" });
       setAclRules([]);
       setShowTable(false);
-      alert("Database cleared!");
+      toast.success("Database cleared",
+      {
+      style: {
+        borderRadius: '10px',
+        background: '#1A1A1F',
+        color: '#fff',
+          },
+        });
     } catch (err) {
       console.error(err);
     }

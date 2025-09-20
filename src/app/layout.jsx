@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { Poppins } from 'next/font/google';
 
@@ -15,10 +16,11 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={poppins.className}>
-      <body className="flex flex-col min-h-screen">
+    <html lang="en">
+      <body>
         {children}
+        <Toaster />
       </body>
     </html>
-  );
+  )
 }

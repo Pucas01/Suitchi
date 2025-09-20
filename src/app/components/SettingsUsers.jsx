@@ -1,5 +1,16 @@
 "use client";
 
+<div><Toaster/></div>
+
+  const toastStyles = {
+    style: {
+      borderRadius: '10px',
+      background: '#1A1A1F',
+      color: '#fff',
+    },
+  };
+
+import toast, { Toaster } from 'react-hot-toast';
 import { useState, useEffect, useRef, Fragment } from "react";
 import { Transition } from "@headlessui/react";
 
@@ -54,7 +65,7 @@ export default function UserManagement() {
   }, []);
 
   const addUser = async () => {
-    if (!newUser.username || !newUser.password) return alert("Username and password are required");
+    if (!newUser.username || !newUser.password) return toast.error("Username and Password are required", toastStyles);
     setLoading(true);
     try {
       const res = await fetch("/api/users", {
@@ -65,7 +76,7 @@ export default function UserManagement() {
       });
       if (!res.ok) {
         const errData = await res.json();
-        alert(errData.error || "Failed to add user");
+        toast.error(`${data.error || "Unknown error"} - Failed to add user`, toastStyles)
       } else {
         setNewUser({ username: "", password: "", role: "user" });
         fetchUsers();
@@ -86,7 +97,7 @@ export default function UserManagement() {
       });
       if (!res.ok) {
         const errData = await res.json();
-        alert(errData.error || "Failed to delete user");
+        toast.error(`${data.error || "Unknown error"} - Failed to delete user"`, toastStyles)
       } else {
         fetchUsers();
       }
@@ -97,7 +108,7 @@ export default function UserManagement() {
 
   const changePassword = async (username) => {
     const newPassword = passwords[username];
-    if (!newPassword) return alert("Enter a new password first");
+    if (!newPassword) return toast.error("Enter a new password first", toastStyles);
     try {
       const res = await fetch(`/api/users/${username}/password`, {
         method: "PUT",
@@ -107,9 +118,9 @@ export default function UserManagement() {
       });
       if (!res.ok) {
         const errData = await res.json();
-        alert(errData.error || "Failed to change password");
+        toast.error(`${data.error || "Unknown error"} - Failed to change password"`, toastStyles)
       } else {
-        alert("Password updated!");
+        toast.success("Password updates", toastStyles);
         setPasswords((prev) => ({ ...prev, [username]: "" }));
         setShowPasswordField((prev) => ({ ...prev, [username]: false }));
       }

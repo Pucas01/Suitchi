@@ -1,6 +1,9 @@
 "use client";
 
+<div><Toaster/></div>
+
 import { useState, useEffect } from "react";
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function SwitchesSection({ switchData }) {
   const { name, ip, image } = switchData;
@@ -71,7 +74,13 @@ const isAdmin = currentUser?.role === "admin";
       const res = await fetch(`/api/tftp/fetch-missing/${name}`, { credentials: "include" });
       if (!res.ok) {
         const errData = await res.json();
-        alert(errData.error || "Failed to fetch missing backups");
+      toast.error(`${errData.error || "Unknown error"} - Failed to fetch missing backups`, {
+      style: {
+        borderRadius: '10px',
+        background: '#1A1A1F',
+        color: '#fff',
+        },
+      });
       }
       await fetchBackups();
     } catch (err) {
@@ -91,7 +100,14 @@ const isAdmin = currentUser?.role === "admin";
       });
       if (!res.ok) {
         const errData = await res.json();
-        alert(errData.error || "Failed to delete file");
+        toast.error(errData.error || "Failed to delete file",
+      {
+      style: {
+        borderRadius: '10px',
+        background: '#1A1A1F',
+        color: '#fff',
+          },
+        });
       } else {
         await fetchBackups();
       }
@@ -120,7 +136,14 @@ const viewFile = async (fileName) => {
       const text = await res.text();
       setFileContent(text);
     } else {
-      alert("Unsupported file type for preview");
+      toast.error("Unsupported file type for preview",
+      {
+      style: {
+        borderRadius: '10px',
+        background: '#1A1A1F',
+        color: '#fff',
+          },
+        });
       return;
     }
 

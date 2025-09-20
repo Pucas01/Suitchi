@@ -1,183 +1,196 @@
 "use client";
 
-import { useState, useEffect, useRef, Fragment } from "react";
+<div><Toaster/></div>
+
+import { useState, useEffect } from "react";
 import { Transition } from "@headlessui/react";
 import UserManagement from "./SettingsUsers";
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function SettingsSection({ refreshSwitches }) {
   const [switches, setSwitches] = useState([]);
   const [newSwitch, setNewSwitch] = useState({ name: "", ip: "", image: "", files: "", snmp: { enabled: false, community: "" } });
   const [loading, setLoading] = useState(false);
-  const [editingSwitch, setEditingSwitch] = useState(null); // {name, ip, image, files, snmp, originalName}
+  const [editingSwitch, setEditingSwitch] = useState(null);
   const [tftpServer, setTftpServer] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
 
-// ------------------ Fetch User ------------------ //  
-const fetchCurrentUser = async () => {
-  try {
-    const res = await fetch("/api/users/me", { credentials: "include" });
-    if (res.ok) {
-      const data = await res.json();
-      setCurrentUser(data.user);
+  // ------------------ Fetch User ------------------ //  
+  const fetchCurrentUser = async () => {
+    try {
+      const res = await fetch("/api/users/me", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentUser(data.user);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to fetch user", toastStyles);
     }
-  } catch (err) {
-    console.error(err);
-  }
-};
+  };
 
-useEffect(() => {
-  fetchCurrentUser();
-}, []);
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
 
-const isAdmin = currentUser?.role === "admin";
+  const isAdmin = currentUser?.role === "admin";
 
+  const toastStyles = {
+    style: {
+      borderRadius: '10px',
+      background: '#1A1A1F',
+      color: '#fff',
+    },
+  };
 
-const fetchSwitches = async () => {
-  try {
-    const res = await fetch("/api/switches", { credentials: "include" });
-    if (!res.ok) throw new Error("Failed to fetch switches");
-    const data = await res.json();
-    setSwitches(data);
-  } catch (err) {
-    console.error(err);
-  }
-};
+  const fetchSwitches = async () => {
+    try {
+      const res = await fetch("/api/switches", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch switches");
+      const data = await res.json();
+      setSwitches(data);
+    } catch (err) {
+      console.error(err);
+      toast.error(`${err.message} - Failed to fetch switches`, toastStyles);
+    }
+  };
 
-
-const fetchConfig = async () => {
-  try {
-    const res = await fetch("/api/tftp", { credentials: "include" });
-    if (!res.ok) throw new Error("Failed to fetch config");
-    const data = await res.json();
-    setTftpServer(data.config?.tftpServer || "");
-  } catch (err) {
-    console.error(err);
-  }
-};
-
+  const fetchConfig = async () => {
+    try {
+      const res = await fetch("/api/tftp", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch config");
+      const data = await res.json();
+      setTftpServer(data.config?.tftpServer || "");
+    } catch (err) {
+      console.error(err);
+      toast.error(`${err.message} - Failed to fetch TFTP config`, toastStyles);
+    }
+  };
 
   useEffect(() => {
     fetchSwitches();
     fetchConfig();
   }, []);
 
-const saveTftpServer = async () => {
-  if (!tftpServer) return alert("TFTP server IP required");
-  try {
-    const res = await fetch("/api/tftp", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ tftpServer }),
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      alert(data.error || "Failed to save TFTP server");
-    } else {
-      alert("TFTP server saved!");
+  const saveTftpServer = async () => {
+    if (!tftpServer) return toast.error("TFTP Server IP required", toastStyles);
+    try {
+      const res = await fetch("/api/tftp", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ tftpServer }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(`${data.error || "Unknown error"} - Failed to save TFTP server`, toastStyles);
+      } else {
+        toast.success("TFTP Server Saved", toastStyles);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(`Failed to save TFTP server`, toastStyles);
     }
-  } catch (err) {
-    console.error(err);
-  }
-};
+  };
 
+  const addSwitch = async () => {
+    if (!newSwitch.name || !newSwitch.ip) return toast.error("Name and IP required", toastStyles);
+    setLoading(true);
+    try {
+      const filesArray = newSwitch.files
+        ? newSwitch.files.split(",").map(f => f.trim()).filter(Boolean)
+        : [];
 
-const addSwitch = async () => {
-  if (!newSwitch.name || !newSwitch.ip) return alert("Name and IP required");
-  setLoading(true);
-  try {
-    const filesArray = newSwitch.files
-      ? newSwitch.files.split(",").map(f => f.trim()).filter(Boolean)
-      : [];
+      const res = await fetch("/api/switches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ...newSwitch, files: filesArray }),
+      });
 
-    const res = await fetch("/api/switches", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ ...newSwitch, files: filesArray }),
-    });
-
-    if (!res.ok) {
-      const errData = await res.json();
-      alert(errData.error || "Failed to add switch");
-    } else {
-      setNewSwitch({ name: "", ip: "", image: "", files: "", snmp: { enabled: true, community: "zabbix" } });
-      fetchSwitches();
-      refreshSwitches?.();
+      if (!res.ok) {
+        const errData = await res.json();
+        toast.error(`${errData.error || "Failed to add switch"}`, toastStyles);
+      } else {
+        setNewSwitch({ name: "", ip: "", image: "", files: "", snmp: { enabled: true, community: "zabbix" } });
+        fetchSwitches();
+        refreshSwitches?.();
+        toast.success("Switch added successfully", toastStyles);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to add switch", toastStyles);
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
-
-const deleteSwitch = async (name) => {
-  if (!confirm(`Delete switch "${name}"? This will remove all backups.`)) return;
-  try {
-    const res = await fetch(`/api/switches/${name}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    if (!res.ok) {
-      const errData = await res.json();
-      alert(errData.error || "Failed to delete switch");
-    } else {
-      fetchSwitches();
-      refreshSwitches?.();
+  const deleteSwitch = async (name) => {
+    // You can replace confirm() with Headless UI Dialog later
+    if (!confirm(`Delete switch "${name}"? This will remove all backups.`)) return;
+    try {
+      const res = await fetch(`/api/switches/${name}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        toast.error(`${errData.error || "Failed to delete switch"}`, toastStyles);
+      } else {
+        fetchSwitches();
+        refreshSwitches?.();
+        toast.success("Switch deleted", toastStyles);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete switch", toastStyles);
     }
-  } catch (err) {
-    console.error(err);
-  }
-};
+  };
 
-
-const startEditing = (sw) => {
-  setEditingSwitch({
-    ...sw,
-    files: sw.files ? sw.files.join(", ") : "",
-    originalName: sw.name,
-    snmp: sw.snmp || { enabled: true, community: "zabbix" },
-  });
-  setShowEditForm(true); // show the form
-};
-
-const cancelEditing = () => {
-  setEditingSwitch(null);
-};
-
-
-
-const saveSwitch = async () => {
-  if (!editingSwitch.name || !editingSwitch.ip) return alert("Name and IP required");
-  setLoading(true);
-  try {
-    const filesArray = editingSwitch.files
-      ? editingSwitch.files.split(",").map(f => f.trim()).filter(Boolean)
-      : [];
-
-    const res = await fetch(`/api/switches/${editingSwitch.originalName}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ ...editingSwitch, files: filesArray }),
+  const startEditing = (sw) => {
+    setEditingSwitch({
+      ...sw,
+      files: sw.files ? sw.files.join(", ") : "",
+      originalName: sw.name,
+      snmp: sw.snmp || { enabled: true, community: "zabbix" },
     });
+  };
 
-    if (!res.ok) {
-      const errData = await res.json();
-      alert(errData.error || "Failed to update switch");
-    } else {
-      setEditingSwitch(null);
-      fetchSwitches();
-      refreshSwitches?.();
+  const cancelEditing = () => {
+    setEditingSwitch(null);
+  };
+
+  const saveSwitch = async () => {
+    if (!editingSwitch.name || !editingSwitch.ip) return toast.error("Name and IP required", toastStyles);
+    setLoading(true);
+    try {
+      const filesArray = editingSwitch.files
+        ? editingSwitch.files.split(",").map(f => f.trim()).filter(Boolean)
+        : [];
+
+      const res = await fetch(`/api/switches/${editingSwitch.originalName}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ...editingSwitch, files: filesArray }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        toast.error(`${errData.error || "Failed to update switch"}`, toastStyles);
+      } else {
+        setEditingSwitch(null);
+        fetchSwitches();
+        refreshSwitches?.();
+        toast.success("Switch updated successfully", toastStyles);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update switch", toastStyles);
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
   return (
