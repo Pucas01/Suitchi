@@ -20,8 +20,10 @@ app.use(cors({
 }));
 app.use(express.json());
 
+require("dotenv").config();
+
 app.use(session({
-  secret: "supersecretkey",
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
