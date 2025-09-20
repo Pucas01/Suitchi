@@ -182,7 +182,7 @@ export default function ACLviewer() {
         {/* ACL Table with fade-in */}
         {aclRules.length > 0 ? (
           <div
-            className={`overflow-auto max-h-[70vh] rounded-xl bg-[#1E1E23] p-4 transition-opacity duration-500 ${
+            className={`overflow-auto max-h-[75vh] rounded-xl bg-[#1E1E23] p-4 transition-opacity duration-500 ${
               showTable ? "opacity-100" : "opacity-0"
             }`}
           >
