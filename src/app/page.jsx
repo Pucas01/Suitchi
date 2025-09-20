@@ -14,6 +14,7 @@ export default function Page() {
   const [user, setUser] = useState(null); // optional user info
   const router = useRouter();
 
+
   // ---------------- Auth Guard ----------------
   useEffect(() => {
     const checkAuth = async () => {

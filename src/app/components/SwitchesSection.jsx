@@ -12,6 +12,26 @@ export default function SwitchesSection({ switchData }) {
   const [viewingFile, setViewingFile] = useState(null);
   const [fileContent, setFileContent] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+// ------------------ Fetch User ------------------ //  
+const fetchCurrentUser = async () => {
+  try {
+    const res = await fetch("/api/users/me", { credentials: "include" });
+    if (res.ok) {
+      const data = await res.json();
+      setCurrentUser(data.user);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+useEffect(() => {
+  fetchCurrentUser();
+}, []);
+
+const isAdmin = currentUser?.role === "admin";
 
   const [snmpData, setSnmpData] = useState({
     uptimeSeconds: null,
@@ -238,6 +258,7 @@ const viewFile = async (fileName) => {
                     >
                       Download
                     </a>
+                    {isAdmin && (
                     <button
                       onClick={() => deleteBackup(backup.name)}
                       className={`px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transform transition-colors duration-200 ${
@@ -247,6 +268,7 @@ const viewFile = async (fileName) => {
                     >
                       {deletingFile === backup.name ? "Deleting..." : "Delete"}
                     </button>
+                    )}
                   </div>
                 </div>
                 <p className="text-gray-400 text-sm mt-1">

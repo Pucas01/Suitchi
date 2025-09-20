@@ -36,7 +36,8 @@ db.run(`
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT UNIQUE NOT NULL,
-  password TEXT NOT NULL
+  password TEXT NOT NULL,
+  role TEXT DEFAULT 'user'
 )
 `, async (err) => {
   if (err) return console.error("Error creating users table:", err);
@@ -46,10 +47,14 @@ CREATE TABLE IF NOT EXISTS users (
     if (err) return console.error("Error checking admin user:", err);
     if (!row) {
       const hashed = await bcrypt.hash(DEFAULT_ADMIN.password, SALT_ROUNDS);
-      db.run(`INSERT INTO users (username, password) VALUES (?, ?)`, [DEFAULT_ADMIN.username, hashed], (err) => {
-        if (err) console.error("Error creating default admin:", err);
-        else console.log(`✅ Default admin created: ${DEFAULT_ADMIN.username}/${DEFAULT_ADMIN.password}`);
-      });
+      db.run(
+        `INSERT INTO users (username, password, role) VALUES (?, ?, ?)`,
+        [DEFAULT_ADMIN.username, hashed, "admin"],
+        (err) => {
+          if (err) console.error("Error creating default admin:", err);
+          else console.log(`✅ Default admin created: ${DEFAULT_ADMIN.username}/${DEFAULT_ADMIN.password}`);
+        }
+      );
     } else {
       console.log("✅ Default admin already exists");
     }
