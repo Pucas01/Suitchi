@@ -6,83 +6,86 @@ import "@xterm/xterm/css/xterm.css";
 export default function SSHTerminal({ host, username, password, onClose }) {
   const terminalRef = useRef(null);
   const wsRef = useRef(null);
+  const termRef = useRef(null);
 
   useEffect(() => {
-    let term, fitAddon;
+    let fitAddon;
 
-    (async () => {
-      const { Terminal } = await import("@xterm/xterm");
-      const { FitAddon } = await import("@xterm/addon-fit");
+    const { Terminal } = require("@xterm/xterm");
+    const { FitAddon } = require("@xterm/addon-fit");
 
-      term = new Terminal({
-        theme: { background: "#1E1E23" },
-        cursorBlink: true,
-        fontSize: 14,
-      });
+    const term = new Terminal({
+      theme: { background: "#1E1E23" },
+      cursorBlink: true,
+      fontSize: 14,
+    });
 
-      fitAddon = new FitAddon();
-      term.loadAddon(fitAddon);
+    fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
 
-      term.open(terminalRef.current);
+    if (!terminalRef.current) return;
 
-      // Fit after render cycle
-      setTimeout(() => {
+    term.open(terminalRef.current);
+
+    // Ensure the container has height before fit
+    setTimeout(() => {
+      try {
         fitAddon.fit();
-      }, 0);
+      } catch (err) {
+        console.error("FitAddon error:", err);
+      }
+    }, 0);
 
-      // WebSocket connection
-      const ws = new WebSocket(`ws://localhost:4000/ssh`);
+    // Resize handler
+    const handleResize = () => {
+      try {
+        fitAddon.fit();
+      } catch {}
+    };
+    window.addEventListener("resize", handleResize);
 
-      ws.onopen = () => {
-        console.log("✅ Connected to SSH WebSocket");
-        ws.send(JSON.stringify({ type: "connect", host, username, password }));
-      };
+    // WebSocket
+    const ws = new WebSocket(`ws://${window.location.hostname}:4000/ssh`);
 
-      ws.onmessage = (msg) => {
-        try {
-          const data = JSON.parse(msg.data);
-          if (data.type === "data") term.write(data.data);
-          if (data.type === "error") {
-            term.write(`\r\nError: ${data.message}\r\n`);
-          }
-        } catch (err) {
-          console.error("Invalid WS message:", msg.data, err);
-        }
-      };
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: "connect", host, username, password }));
+    };
 
-      ws.onerror = (err) => {
-        term.write("\r\n❌ WebSocket error\r\n");
-        console.error("WebSocket error:", err);
-      };
+    ws.onmessage = (msg) => {
+      try {
+        const data = JSON.parse(msg.data);
+        if (data.type === "data") term.write(data.data);
+        if (data.type === "error") term.write(`\r\nError: ${data.message}\r\n`);
+      } catch {}
+    };
 
-      ws.onclose = () => {
-        term.write("\r\n🔌 Connection closed\r\n");
-      };
+    ws.onerror = () => {
+      term.write("\r\n❌ WebSocket error\r\n");
+    };
 
-      term.onData((input) => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: "input", data: input }));
-        }
-      });
+    ws.onclose = () => {
+      term.write("\r\n🔌 Connection closed\r\n");
+    };
 
-      wsRef.current = ws;
+    term.onData((input) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "input", data: input }));
+      }
+    });
 
-      // Cleanup
-      return () => {
-        window.removeEventListener("resize", handleResize);
-        ws.close();
-        term.dispose();
-      };
-    })();
+    termRef.current = term;
+    wsRef.current = ws;
 
     return () => {
-      wsRef.current?.close();
+      window.removeEventListener("resize", handleResize);
+      ws.close();
+      if (term) term.dispose();
     };
   }, [host, username, password]);
 
   return (
-    <div className="w-full max-h-[800px] bg-black rounded overflow-hidden relative">
-      <div ref={terminalRef} className="w-full h-full" />
+    <div className="w-full h-[85vh] bg-[#1E1E23]} rounded overflow-hidden relative">
+      <div ref={terminalRef} className="w-full h-[85vh]" />
       <button
         onClick={onClose}
         className="absolute top-2 right-2 px-3 py-1 text-white rounded-xl bg-[#414562] hover:bg-[#545C80] transition-colors duration-200 cursor-pointer"

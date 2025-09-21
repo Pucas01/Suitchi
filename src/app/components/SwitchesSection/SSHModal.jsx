@@ -60,7 +60,7 @@ export default function SSHModal({ visible, onClose, ip }) {
     >
       <div
         ref={containerRef}
-        className={`bg-[#1A1A1F] p-6 rounded-xl max-w-4xl w-full max-h-[85vh] overflow-hidden relative transition-transform duration-300 transform ${
+        className={`bg-[#1A1A1F] p-6 rounded-xl max-w-4xl w-full max-h-[95vh] overflow-auto relative transition-transform duration-300 transform ${
           visible ? "scale-100" : "scale-95"
         }`}
       >
