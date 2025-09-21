@@ -24,5 +24,15 @@
       "community": "",
       "version": "2c"
     }
+  },
+  {
+    "name": "TestServer",
+    "ip": "192.168.0.100",
+    "image": "/images/cisco_switch.jpg",
+    "files": [],
+    "snmp": {
+      "enabled": false,
+      "community": ""
+    }
   }
 ]

@@ -1,9 +1,8 @@
 "use client";
 
-<div><Toaster/></div>
-
 import { useState, useEffect } from "react";
-import toast, { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from "react-hot-toast";
+import SSHTerminal from "./SSHTerminal";
 
 export default function SwitchesSection({ switchData }) {
   const { name, ip, image } = switchData;
@@ -15,26 +14,27 @@ export default function SwitchesSection({ switchData }) {
   const [viewingFile, setViewingFile] = useState(null);
   const [fileContent, setFileContent] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
+  const [sshModalVisible, setSshModalVisible] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
-// ------------------ Fetch User ------------------ //  
-const fetchCurrentUser = async () => {
-  try {
-    const res = await fetch("/api/users/me", { credentials: "include" });
-    if (res.ok) {
-      const data = await res.json();
-      setCurrentUser(data.user);
+  // ------------------ Fetch User ------------------ //
+  const fetchCurrentUser = async () => {
+    try {
+      const res = await fetch("/api/users/me", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentUser(data.user);
+      }
+    } catch (err) {
+      console.error(err);
     }
-  } catch (err) {
-    console.error(err);
-  }
-};
+  };
 
-useEffect(() => {
-  fetchCurrentUser();
-}, []);
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
 
-const isAdmin = currentUser?.role === "admin";
+  const isAdmin = currentUser?.role === "admin";
 
   const [snmpData, setSnmpData] = useState({
     uptimeSeconds: null,
@@ -71,16 +71,22 @@ const isAdmin = currentUser?.role === "admin";
   const fetchMissingBackups = async () => {
     setLoadingBackups(true);
     try {
-      const res = await fetch(`/api/tftp/fetch-missing/${name}`, { credentials: "include" });
+      const res = await fetch(
+        `/api/tftp/fetch-missing/${name}`,
+        { credentials: "include" }
+      );
       if (!res.ok) {
         const errData = await res.json();
-      toast.error(`${errData.error || "Unknown error"} - Failed to fetch missing backups`, {
-      style: {
-        borderRadius: '10px',
-        background: '#1A1A1F',
-        color: '#fff',
-        },
-      });
+        toast.error(
+          `${errData.error || "Unknown error"} - Failed to fetch missing backups`,
+          {
+            style: {
+              borderRadius: "10px",
+              background: "#1A1A1F",
+              color: "#fff",
+            },
+          }
+        );
       }
       await fetchBackups();
     } catch (err) {
@@ -100,12 +106,11 @@ const isAdmin = currentUser?.role === "admin";
       });
       if (!res.ok) {
         const errData = await res.json();
-        toast.error(errData.error || "Failed to delete file",
-      {
-      style: {
-        borderRadius: '10px',
-        background: '#1A1A1F',
-        color: '#fff',
+        toast.error(errData.error || "Failed to delete file", {
+          style: {
+            borderRadius: "10px",
+            background: "#1A1A1F",
+            color: "#fff",
           },
         });
       } else {
@@ -118,43 +123,40 @@ const isAdmin = currentUser?.role === "admin";
     }
   };
 
-const viewFile = async (fileName) => {
-  const fileUrl = `/downloads/${name}/${fileName}`;
+  const viewFile = async (fileName) => {
+    const fileUrl = `/downloads/${name}/${fileName}`;
 
-  try {
-    const res = await fetch(fileUrl, { credentials: "include" }); // 👈 include session cookie
+    try {
+      const res = await fetch(fileUrl, { credentials: "include" });
 
-    if (res.status === 401) {
-      // Not logged in anymore → kick back to login
-      window.location.href = "/login";
-      return;
-    }
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
 
-    if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
+      if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
 
-    if (fileName.endsWith(".txt") || fileName.endsWith(".cfg")) {
-      const text = await res.text();
-      setFileContent(text);
-    } else {
-      toast.error("Unsupported file type for preview",
-      {
-      style: {
-        borderRadius: '10px',
-        background: '#1A1A1F',
-        color: '#fff',
+      if (fileName.endsWith(".txt") || fileName.endsWith(".cfg")) {
+        const text = await res.text();
+        setFileContent(text);
+      } else {
+        toast.error("Unsupported file type for preview", {
+          style: {
+            borderRadius: "10px",
+            background: "#1A1A1F",
+            color: "#fff",
           },
         });
-      return;
+        return;
+      }
+
+      setViewingFile(fileName);
+      setModalVisible(true);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load file");
     }
-
-    setViewingFile(fileName);
-    setModalVisible(true);
-
-  } catch (err) {
-    console.error(err);
-    alert("Failed to load file");
-  }
-};
+  };
 
   const closeModal = () => {
     setModalVisible(false);
@@ -171,12 +173,19 @@ const viewFile = async (fileName) => {
   // ---------------- SNMP Data ----------------
   const fetchSNMP = async () => {
     if (!switchData.snmp?.enabled) {
-      setSnmpData({ status: "SNMP Disabled", uptimeSeconds: null, hostname: "-", model: "-" });
+      setSnmpData({
+        status: "SNMP Disabled",
+        uptimeSeconds: null,
+        hostname: "-",
+        model: "-",
+      });
       return;
     }
     setLoadingUptime(true);
     try {
-      const res = await fetch(`/api/snmp/${switchData.name}`, { credentials: "include" });
+      const res = await fetch(`/api/snmp/${switchData.name}`, {
+        credentials: "include",
+      });
       const data = await res.json();
       setSnmpData({
         uptimeSeconds: data.uptimeSeconds,
@@ -186,7 +195,12 @@ const viewFile = async (fileName) => {
       });
     } catch (err) {
       console.error("Error fetching SNMP data:", err);
-      setSnmpData({ uptimeSeconds: null, hostname: "-", model: "-", status: "offline" });
+      setSnmpData({
+        uptimeSeconds: null,
+        hostname: "-",
+        model: "-",
+        status: "offline",
+      });
     } finally {
       setLoadingUptime(false);
     }
@@ -196,13 +210,15 @@ const viewFile = async (fileName) => {
   useEffect(() => {
     fetchBackups();
     fetchSNMP();
-    const interval = setInterval(fetchSNMP, 3000); // refresh every 60s
+    const interval = setInterval(fetchSNMP, 3000);
     return () => clearInterval(interval);
   }, [name]);
 
   // ---------------- Render ----------------
   return (
     <div className="flex-1 rounded-xl p-6 h-screen bg-[#1A1A1F] overflow-auto">
+      <Toaster />
+
       {/* Switch Info */}
       <div className="rounded-xl mb-4 p-6 bg-[#1E1E23] flex justify-between items-stretch">
         <div className="flex flex-col justify-between">
@@ -221,12 +237,18 @@ const viewFile = async (fileName) => {
             <p className="text-xl">Model: {snmpData.model}</p>
             <p className="text-xl">Hostname: {snmpData.hostname}</p>
           </div>
-          {/* Only show Last checked if SNMP is enabled */}
-            {switchData.snmp?.enabled && (
+          {switchData.snmp?.enabled && (
             <p className="text-sm text-gray-400">
               Last checked: {snmpData.uptimeSeconds !== null ? "just now" : "-"}
             </p>
-              )}
+          )}
+          {/* SSH Button */}
+          <button
+            onClick={() => setSshModalVisible(true)}
+            className="mt-4 px-4 py-2 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transition-colors duration-200"
+          >
+            Open SSH
+          </button>
         </div>
 
         <div className="h-full">
@@ -243,10 +265,10 @@ const viewFile = async (fileName) => {
         <div className="flex justify-between items-center mb-4">
           <p className="text-2xl">Saved Backups</p>
           <button
-            className={`px-4 py-2 rounded ${
+            className={`px-4 py-2 rounded-xl ${
               loadingBackups
                 ? "bg-gray-500 cursor-not-allowed"
-                : "bg-[#414562] hover:bg-[#545C80] rounded-xl text-center transition-colors duration-200 cursor-pointer transform"
+                : "bg-[#414562] hover:bg-[#545C80] transition-colors duration-200 cursor-pointer"
             } text-white`}
             onClick={fetchMissingBackups}
             disabled={loadingBackups}
@@ -269,28 +291,32 @@ const viewFile = async (fileName) => {
                   <div className="flex space-x-2">
                     <button
                       onClick={() => viewFile(backup.name)}
-                      className="px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transform transition-colors duration-200"
+                      className="px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transition-colors duration-200"
                     >
                       View
                     </button>
                     <a
                       href={`/downloads/${name}/${backup.name}`}
-                      className="px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white text-center cursor-pointer transform transition-colors duration-200"
+                      className="px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white text-center cursor-pointer transition-colors duration-200"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
                       Download
                     </a>
                     {isAdmin && (
-                    <button
-                      onClick={() => deleteBackup(backup.name)}
-                      className={`px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transform transition-colors duration-200 ${
-                        deletingFile === backup.name ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                      disabled={deletingFile === backup.name}
-                    >
-                      {deletingFile === backup.name ? "Deleting..." : "Delete"}
-                    </button>
+                      <button
+                        onClick={() => deleteBackup(backup.name)}
+                        className={`px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transition-colors duration-200 ${
+                          deletingFile === backup.name
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
+                        }`}
+                        disabled={deletingFile === backup.name}
+                      >
+                        {deletingFile === backup.name
+                          ? "Deleting..."
+                          : "Delete"}
+                      </button>
                     )}
                   </div>
                 </div>
@@ -303,10 +329,12 @@ const viewFile = async (fileName) => {
         )}
       </div>
 
-      {/* Modal */}
+      {/* File Modal */}
       <div
         className={`fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 transition-opacity duration-300 ${
-          modalVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          modalVisible
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
         }`}
         onClick={handleBackdropClick}
       >
@@ -326,11 +354,44 @@ const viewFile = async (fileName) => {
               <h2 className="text-xl mb-4">{viewingFile}</h2>
               {fileContent.startsWith("http") &&
               fileContent.match(/\.(png|jpg|jpeg|gif)$/i) ? (
-                <img src={fileContent} alt={viewingFile} className="max-w-full max-h-[70vh]" />
+                <img
+                  src={fileContent}
+                  alt={viewingFile}
+                  className="max-w-full max-h-[70vh]"
+                />
               ) : (
-                <pre className="bg-[#1E1E23] p-4 rounded-xl text-sm overflow-auto">{fileContent}</pre>
+                <pre className="bg-[#1E1E23] p-4 rounded-xl text-sm overflow-auto">
+                  {fileContent}
+                </pre>
               )}
             </>
+          )}
+        </div>
+      </div>
+
+      {/* SSH Modal */}
+      <div
+        className={`fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 transition-opacity duration-300 ${
+          sshModalVisible
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        }`}
+        onClick={(e) =>
+          e.target === e.currentTarget && setSshModalVisible(false)
+        }
+      >
+        <div
+          className={`bg-[#1A1A1F] p-6 rounded-xl max-w-7xl w-full max-h-7xl overflow-auto relative transition-transform duration-300 transform ${
+            sshModalVisible ? "scale-100" : "scale-95"
+          }`}
+        >
+          {sshModalVisible && (
+            <SSHTerminal
+              host={ip}
+              username="pucas01" // TODO: replace with inputs
+              password="02090209" // TODO: secure handling
+              onClose={() => setSshModalVisible(false)}
+            />
           )}
         </div>
       </div>

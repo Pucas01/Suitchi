@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const http = require("http");
 const session = require("express-session");
 const switchesRoutes = require("./routes/switches");
 const backupsRoutes = require("./routes/backups");
@@ -9,14 +10,15 @@ const snmpRoutes = require("./routes/snmp");
 const usersRoutes = require("./routes/users");
 const requireAuth = require("./authMiddleware");
 const { LOCAL_DIR } = require("./helpers");
+const { initSSHServer } = require("./sshServer");
 const os = require("os");
 
 const app = express();
 
 // --- Middleware ---
 app.use(cors({
-  origin: "http://localhost:3000", // frontend URL
-  credentials: true,               // allow cookies
+  origin: "http://localhost:3000",
+  credentials: true,
 }));
 app.use(express.json());
 
@@ -28,11 +30,10 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: false, // true if using HTTPS
-    maxAge: 1000 * 60 * 60, // 1 hour
+    secure: false,
+    maxAge: 1000 * 60 * 60,
   }
 }));
-
 
 // --- Routes ---
 app.use("/api/switches", requireAuth, switchesRoutes);
@@ -49,19 +50,20 @@ app.use("/downloads", requireAuth, express.static(LOCAL_DIR));
 const PORT = 4000;
 const HOST = "0.0.0.0";
 
-function getServerIP() {
+// Create one HTTP server and attach WS to it
+const server = http.createServer(app);
+initSSHServer(server); // attach WebSocket server
+
+server.listen(PORT, HOST, () => {
   const interfaces = os.networkInterfaces();
+  let serverIP = "localhost";
   for (const name of Object.keys(interfaces)) {
     for (const iface of interfaces[name]) {
       if (iface.family === "IPv4" && !iface.internal) {
-        return iface.address;
+        serverIP = iface.address;
+        break;
       }
     }
   }
-  return "localhost";
-}
-
-app.listen(PORT, HOST, () => {
-  const serverIP = getServerIP();
   console.log(`🚀 Backend running on http://${serverIP}:${PORT}`);
 });
