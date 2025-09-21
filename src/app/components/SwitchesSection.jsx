@@ -1,4 +1,6 @@
 "use client";
+
+
 import { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import SwitchInfo from "./SwitchesSection/SwitchInfo";
@@ -14,8 +16,9 @@ export default function SwitchesSection({ switchData }) {
   const [deletingFile, setDeletingFile] = useState(null);
   const [viewingFile, setViewingFile] = useState(null);
   const [fileContent, setFileContent] = useState("");
-  const [modalVisible, setModalVisible] = useState(false);
+  const [fileModalVisible, setFileModalVisible] = useState(false);
   const [sshModalVisible, setSshModalVisible] = useState(false);
+  const [sshTutorial, setSshTutorial] = useState(null); // null = normal SSH
   const [currentUser, setCurrentUser] = useState(null);
   const [snmpData, setSnmpData] = useState({
     uptimeSeconds: null,
@@ -74,12 +77,9 @@ export default function SwitchesSection({ switchData }) {
       });
       if (!res.ok) {
         const errData = await res.json();
-        toast.error(
-          `${errData.error || "Unknown error"} - Failed to fetch missing backups`,
-          {
-            style: { borderRadius: "10px", background: "#1A1A1F", color: "#fff" },
-          }
-        );
+        toast.error(`${errData.error || "Unknown error"} - Failed to fetch missing backups`, {
+          style: { borderRadius: "10px", background: "#1A1A1F", color: "#fff" },
+        });
       }
       await fetchBackups();
     } catch (err) {
@@ -132,7 +132,7 @@ export default function SwitchesSection({ switchData }) {
         return;
       }
       setViewingFile(fileName);
-      setModalVisible(true);
+      setFileModalVisible(true);
     } catch (err) {
       console.error(err);
       alert("Failed to load file");
@@ -181,8 +181,47 @@ export default function SwitchesSection({ switchData }) {
     return () => clearInterval(interval);
   }, [name]);
 
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) setModalVisible(false);
+  // ---------------- SSH Modal ----------------
+  const openSSH = () => {
+    setSshTutorial(null); // normal SSH, no tutorial
+    setSshModalVisible(true);
+  };
+
+  const openTutorialSSH = () => {
+      setSshTutorial([
+      {
+        title: "Step 1: Enter configuration mode",
+        commands: ["conf t"]
+      },  
+      {
+        title: "Step 2: Create the kron policy",
+        commands: ["kron policy-list TFTP-Config-Backup", "cli copy startup-config tftp://YOURTFTPSERVERADRESS/SWITCHNAME.cfg"]
+      },
+      {
+        title: "Step 2.5: Copy the config manually ones",
+        commands: ["copy startup-config tftp://YOURTFTPSERVERADRESS/SWITCHNAME.cfg"]
+      },
+      {
+        title: "Step 3: Create the kron job",
+        commands: ["kron occurrence TFTP-Config-Backup at 2:00 recurring", "policy-list TFTP-Config-Backup"]
+      },
+      {
+        title: "Step 4: Optionally show the scedule to confirm its creation",
+        commands: ["show kron schedule"]
+      },
+      {
+        title: "Step 5: Copy the running config to starting config",
+        commands: ["wr"]
+      },
+      {
+        title: "Step 6: Edit your switch in the this webpages settings and add the SWITCHNAME.cfg file to the files to fetch field",
+      },
+      {
+        title: "Step 7: Press the Fetch missing button to fetch the config",
+      }
+    ]);
+
+    setSshModalVisible(true);
   };
 
   // ---------------- Render ----------------
@@ -192,9 +231,10 @@ export default function SwitchesSection({ switchData }) {
         switchData={switchData}
         snmpData={snmpData}
         loadingUptime={loadingUptime}
-        onOpenSSH={() => setSshModalVisible(true)}
+        onOpenSSH={openSSH}
         formatUptime={formatUptime}
       />
+
       <BackupsList
         backups={backups}
         fetchMissingBackups={fetchMissingBackups}
@@ -204,19 +244,24 @@ export default function SwitchesSection({ switchData }) {
         viewFile={viewFile}
         isAdmin={isAdmin}
         switchName={name}
+        onSetupBackups={openTutorialSSH} // only tutorial opens this
       />
+
       <FileModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
+        visible={fileModalVisible}
+        onClose={() => setFileModalVisible(false)}
         viewingFile={viewingFile}
         fileContent={fileContent}
-        handleBackdropClick={handleBackdropClick}
+        handleBackdropClick={(e) => e.target === e.currentTarget && setFileModalVisible(false)}
       />
+
       <SSHModal
         visible={sshModalVisible}
         onClose={() => setSshModalVisible(false)}
         ip={ip}
+        tutorialSteps={sshTutorial} // null = normal SSH
       />
+
     </div>
   );
 }
