@@ -11,9 +11,12 @@ const usersRoutes = require("./routes/users");
 const requireAuth = require("./authMiddleware");
 const { LOCAL_DIR } = require("./helpers");
 const { initSSHServer } = require("./sshServer");
+const crypto = require("crypto");
 const os = require("os");
 
 const app = express();
+
+const SESSION_SECRET = crypto.randomBytes(64).toString("hex");
 
 // --- Middleware ---
 app.use(cors({
@@ -22,10 +25,8 @@ app.use(cors({
 }));
 app.use(express.json());
 
-require("dotenv").config();
-
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
