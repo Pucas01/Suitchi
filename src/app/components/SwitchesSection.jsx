@@ -1,13 +1,14 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
-import SSHTerminal from "./SSHTerminal";
+import SwitchInfo from "./SwitchesSection/SwitchInfo";
+import BackupsList from "./SwitchesSection/BackupsList";
+import FileModal from "./SwitchesSection/FileModal";
+import SSHModal from "./SwitchesSection/SSHModal";
 
 export default function SwitchesSection({ switchData }) {
-  const { name, ip, image } = switchData;
+  const { name, ip } = switchData;
 
-  // ---------------- States ----------------
   const [backups, setBackups] = useState([]);
   const [loadingBackups, setLoadingBackups] = useState(false);
   const [deletingFile, setDeletingFile] = useState(null);
@@ -16,26 +17,6 @@ export default function SwitchesSection({ switchData }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [sshModalVisible, setSshModalVisible] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-
-  // ------------------ Fetch User ------------------ //
-  const fetchCurrentUser = async () => {
-    try {
-      const res = await fetch("/api/users/me", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setCurrentUser(data.user);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  useEffect(() => {
-    fetchCurrentUser();
-  }, []);
-
-  const isAdmin = currentUser?.role === "admin";
-
   const [snmpData, setSnmpData] = useState({
     uptimeSeconds: null,
     hostname: "-",
@@ -44,8 +25,25 @@ export default function SwitchesSection({ switchData }) {
   });
   const [loadingUptime, setLoadingUptime] = useState(false);
 
+  const isAdmin = currentUser?.role === "admin";
+
+  // ---------------- Fetch Current User ----------------
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/users/me", { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          setCurrentUser(data.user);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, []);
+
   // ---------------- Helpers ----------------
-  function formatUptime(seconds) {
+  const formatUptime = (seconds) => {
     if (seconds === null) return "-";
     const days = Math.floor(seconds / 86400);
     seconds %= 86400;
@@ -54,7 +52,7 @@ export default function SwitchesSection({ switchData }) {
     const minutes = Math.floor(seconds / 60);
     seconds %= 60;
     return `${days}d ${hours}h ${minutes}m ${seconds}s`;
-  }
+  };
 
   // ---------------- Fetch Functions ----------------
   const fetchBackups = async () => {
@@ -71,26 +69,21 @@ export default function SwitchesSection({ switchData }) {
   const fetchMissingBackups = async () => {
     setLoadingBackups(true);
     try {
-      const res = await fetch(
-        `/api/tftp/fetch-missing/${name}`,
-        { credentials: "include" }
-      );
+      const res = await fetch(`/api/tftp/fetch-missing/${name}`, {
+        credentials: "include",
+      });
       if (!res.ok) {
         const errData = await res.json();
         toast.error(
           `${errData.error || "Unknown error"} - Failed to fetch missing backups`,
           {
-            style: {
-              borderRadius: "10px",
-              background: "#1A1A1F",
-              color: "#fff",
-            },
+            style: { borderRadius: "10px", background: "#1A1A1F", color: "#fff" },
           }
         );
       }
       await fetchBackups();
     } catch (err) {
-      console.error("Error fetching missing backups:", err);
+      console.error(err);
     } finally {
       setLoadingBackups(false);
     }
@@ -107,11 +100,7 @@ export default function SwitchesSection({ switchData }) {
       if (!res.ok) {
         const errData = await res.json();
         toast.error(errData.error || "Failed to delete file", {
-          style: {
-            borderRadius: "10px",
-            background: "#1A1A1F",
-            color: "#fff",
-          },
+          style: { borderRadius: "10px", background: "#1A1A1F", color: "#fff" },
         });
       } else {
         await fetchBackups();
@@ -125,15 +114,12 @@ export default function SwitchesSection({ switchData }) {
 
   const viewFile = async (fileName) => {
     const fileUrl = `/downloads/${name}/${fileName}`;
-
     try {
       const res = await fetch(fileUrl, { credentials: "include" });
-
       if (res.status === 401) {
         window.location.href = "/login";
         return;
       }
-
       if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
 
       if (fileName.endsWith(".txt") || fileName.endsWith(".cfg")) {
@@ -141,15 +127,10 @@ export default function SwitchesSection({ switchData }) {
         setFileContent(text);
       } else {
         toast.error("Unsupported file type for preview", {
-          style: {
-            borderRadius: "10px",
-            background: "#1A1A1F",
-            color: "#fff",
-          },
+          style: { borderRadius: "10px", background: "#1A1A1F", color: "#fff" },
         });
         return;
       }
-
       setViewingFile(fileName);
       setModalVisible(true);
     } catch (err) {
@@ -158,19 +139,6 @@ export default function SwitchesSection({ switchData }) {
     }
   };
 
-  const closeModal = () => {
-    setModalVisible(false);
-    setTimeout(() => {
-      setViewingFile(null);
-      setFileContent("");
-    }, 300);
-  };
-
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) closeModal();
-  };
-
-  // ---------------- SNMP Data ----------------
   const fetchSNMP = async () => {
     if (!switchData.snmp?.enabled) {
       setSnmpData({
@@ -194,7 +162,7 @@ export default function SwitchesSection({ switchData }) {
         status: data.status || "offline",
       });
     } catch (err) {
-      console.error("Error fetching SNMP data:", err);
+      console.error(err);
       setSnmpData({
         uptimeSeconds: null,
         hostname: "-",
@@ -206,7 +174,6 @@ export default function SwitchesSection({ switchData }) {
     }
   };
 
-  // ---------------- Effects ----------------
   useEffect(() => {
     fetchBackups();
     fetchSNMP();
@@ -214,187 +181,42 @@ export default function SwitchesSection({ switchData }) {
     return () => clearInterval(interval);
   }, [name]);
 
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) setModalVisible(false);
+  };
+
   // ---------------- Render ----------------
   return (
     <div className="flex-1 rounded-xl p-6 h-screen bg-[#1A1A1F] overflow-auto">
-      <Toaster />
-
-      {/* Switch Info */}
-      <div className="rounded-xl mb-4 p-6 bg-[#1E1E23] flex justify-between items-stretch">
-        <div className="flex flex-col justify-between">
-          <div>
-            <p className="text-2xl mb-2">{name}</p>
-            <p className="text-xl">IP: {ip}</p>
-            <p className="text-xl">Status: {snmpData.status}</p>
-            <p className="text-xl">
-              Uptime:{" "}
-              {snmpData.uptimeSeconds !== null
-                ? formatUptime(snmpData.uptimeSeconds)
-                : loadingUptime
-                ? "-"
-                : "-"}
-            </p>
-            <p className="text-xl">Model: {snmpData.model}</p>
-            <p className="text-xl">Hostname: {snmpData.hostname}</p>
-          </div>
-          {switchData.snmp?.enabled && (
-            <p className="text-sm text-gray-400">
-              Last checked: {snmpData.uptimeSeconds !== null ? "just now" : "-"}
-            </p>
-          )}
-          {/* SSH Button */}
-          <button
-            onClick={() => setSshModalVisible(true)}
-            className="mt-4 px-4 py-2 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transition-colors duration-200"
-          >
-            Open SSH
-          </button>
-        </div>
-
-        <div className="h-full">
-          <img
-            src={image || "/images/cisco_switch.jpg"}
-            className="rounded-xl object-cover h-full max-h-48"
-            alt={name}
-          />
-        </div>
-      </div>
-
-      {/* Backup Status */}
-      <div className="rounded-xl p-6 bg-[#1E1E23] flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <p className="text-2xl">Saved Backups</p>
-          <button
-            className={`px-4 py-2 rounded-xl ${
-              loadingBackups
-                ? "bg-gray-500 cursor-not-allowed"
-                : "bg-[#414562] hover:bg-[#545C80] transition-colors duration-200 cursor-pointer"
-            } text-white`}
-            onClick={fetchMissingBackups}
-            disabled={loadingBackups}
-          >
-            {loadingBackups ? "Fetching..." : `Fetch Missing for ${name}`}
-          </button>
-        </div>
-
-        {backups.length === 0 ? (
-          <p className="text-gray-400">No backups available.</p>
-        ) : (
-          <ul className="space-y-2">
-            {backups.map((backup) => (
-              <li
-                key={backup.name}
-                className="flex flex-col p-2 rounded-xl bg-[#1E1E23]"
-              >
-                <div className="flex justify-between items-center w-full">
-                  <span className="font-medium">{backup.name}</span>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => viewFile(backup.name)}
-                      className="px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transition-colors duration-200"
-                    >
-                      View
-                    </button>
-                    <a
-                      href={`/downloads/${name}/${backup.name}`}
-                      className="px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white text-center cursor-pointer transition-colors duration-200"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Download
-                    </a>
-                    {isAdmin && (
-                      <button
-                        onClick={() => deleteBackup(backup.name)}
-                        className={`px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transition-colors duration-200 ${
-                          deletingFile === backup.name
-                            ? "opacity-50 cursor-not-allowed"
-                            : ""
-                        }`}
-                        disabled={deletingFile === backup.name}
-                      >
-                        {deletingFile === backup.name
-                          ? "Deleting..."
-                          : "Delete"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <p className="text-gray-400 text-sm mt-1">
-                  Last change: {backup.lastChange || "-"}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* File Modal */}
-      <div
-        className={`fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 transition-opacity duration-300 ${
-          modalVisible
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
-        }`}
-        onClick={handleBackdropClick}
-      >
-        <div
-          className={`bg-[#1A1A1F] p-6 rounded-xl max-w-3xl w-full max-h-[80vh] overflow-auto relative transition-transform duration-300 transform ${
-            modalVisible ? "scale-100" : "scale-95"
-          }`}
-        >
-          <button
-            onClick={closeModal}
-            className="absolute right-6 px-2 py-1 bg-[#414562] hover:bg-[#545C80] transition-colors duration-200 cursor-pointer rounded-xl text-white"
-          >
-            Close
-          </button>
-          {viewingFile && (
-            <>
-              <h2 className="text-xl mb-4">{viewingFile}</h2>
-              {fileContent.startsWith("http") &&
-              fileContent.match(/\.(png|jpg|jpeg|gif)$/i) ? (
-                <img
-                  src={fileContent}
-                  alt={viewingFile}
-                  className="max-w-full max-h-[70vh]"
-                />
-              ) : (
-                <pre className="bg-[#1E1E23] p-4 rounded-xl text-sm overflow-auto">
-                  {fileContent}
-                </pre>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* SSH Modal */}
-      <div
-        className={`fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 transition-opacity duration-300 ${
-          sshModalVisible
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
-        }`}
-        onClick={(e) =>
-          e.target === e.currentTarget && setSshModalVisible(false)
-        }
-      >
-        <div
-          className={`bg-[#1A1A1F] p-6 rounded-xl max-w-7xl w-full max-h-7xl overflow-auto relative transition-transform duration-300 transform ${
-            sshModalVisible ? "scale-100" : "scale-95"
-          }`}
-        >
-          {sshModalVisible && (
-            <SSHTerminal
-              host={ip}
-              username="pucas01" // TODO: replace with inputs
-              password="02090209" // TODO: secure handling
-              onClose={() => setSshModalVisible(false)}
-            />
-          )}
-        </div>
-      </div>
+      <SwitchInfo
+        switchData={switchData}
+        snmpData={snmpData}
+        loadingUptime={loadingUptime}
+        onOpenSSH={() => setSshModalVisible(true)}
+        formatUptime={formatUptime}
+      />
+      <BackupsList
+        backups={backups}
+        fetchMissingBackups={fetchMissingBackups}
+        deleteBackup={deleteBackup}
+        loadingBackups={loadingBackups}
+        deletingFile={deletingFile}
+        viewFile={viewFile}
+        isAdmin={isAdmin}
+        switchName={name}
+      />
+      <FileModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        viewingFile={viewingFile}
+        fileContent={fileContent}
+        handleBackdropClick={handleBackdropClick}
+      />
+      <SSHModal
+        visible={sshModalVisible}
+        onClose={() => setSshModalVisible(false)}
+        ip={ip}
+      />
     </div>
   );
 }

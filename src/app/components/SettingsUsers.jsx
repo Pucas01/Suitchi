@@ -1,6 +1,5 @@
 "use client";
 
-<div><Toaster/></div>
 
   const toastStyles = {
     style: {

@@ -85,7 +85,7 @@ export default function SSHTerminal({ host, username, password, onClose }) {
       <div ref={terminalRef} className="w-full h-full" />
       <button
         onClick={onClose}
-        className="absolute top-2 right-2 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition"
+        className="absolute top-2 right-2 px-3 py-1 text-white rounded-xl bg-[#414562] hover:bg-[#545C80] transition-colors duration-200 cursor-pointer"
       >
         Close
       </button>
