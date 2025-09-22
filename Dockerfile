@@ -7,18 +7,18 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
-# Copy everything (frontend + backend + public)
+# Copy full project
 COPY . .
 
-# Build Next.js frontend
-RUN npm run build --prefix src/app
+# Build Next.js frontend (root package.json, frontend in src/app)
+RUN npx next build src/app
 
 # -------- Stage 2: Runtime --------
 FROM node:24.8.0 AS runtime
 
 WORKDIR /app
 
-# Copy only necessary files from builder
+# Copy everything from builder
 COPY --from=builder /app ./
 
 # Expose ports
@@ -28,6 +28,8 @@ EXPOSE 4000
 # Install pm2 globally
 RUN npm install -g pm2
 
-# Start both servers with pm2
+# Copy ecosystem config
 COPY ecosystem.config.js ./
+
+# Start both servers
 CMD ["pm2-runtime", "ecosystem.config.js"]
