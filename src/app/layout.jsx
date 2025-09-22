@@ -10,7 +10,7 @@ const poppins = Poppins({
 });
 
 export const metadata = {
-  title: "ACL",
+  title: "Suitchi",
   description: "Web frontend to manage switch backups and ACL status",
 };
 
