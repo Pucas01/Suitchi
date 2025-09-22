@@ -24,4 +24,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/suitchi:latest
+          tags: ghcr.io/pucas01/suitchi:latest
