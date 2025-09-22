@@ -9,7 +9,8 @@ export default function BackupsList({
   viewFile,
   isAdmin,
   switchName,
-  onSetupBackups, // Callback to open SSH modal
+  onSetupBackups,    // Setup backups callback
+  onRestoreBackup,   // Restore backup callback
 }) {
   const hasBackups = backups.length > 0;
 
@@ -52,12 +53,15 @@ export default function BackupsList({
               <div className="flex justify-between items-center w-full">
                 <span className="font-medium">{backup.name}</span>
                 <div className="flex space-x-2">
+                  {/* View Button */}
                   <button
                     onClick={() => viewFile(backup.name)}
                     className="px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transition-colors duration-200"
                   >
                     View
                   </button>
+
+                  {/* Download Link */}
                   <a
                     href={`/downloads/${switchName}/${backup.name}`}
                     target="_blank"
@@ -66,19 +70,35 @@ export default function BackupsList({
                   >
                     Download
                   </a>
+
+                  {/* Admin-only actions */}
                   {isAdmin && (
-                    <button
-                      onClick={() => deleteBackup(backup.name)}
-                      disabled={deletingFile === backup.name}
-                      className={`px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transition-colors duration-200 ${
-                        deletingFile === backup.name ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                    >
-                      {deletingFile === backup.name ? "Deleting..." : "Delete"}
-                    </button>
+                    <>
+                      {/* Restore */}
+                      {onRestoreBackup && (
+                        <button
+                          onClick={() => onRestoreBackup(backup.name)}
+                          className="px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transition-colors duration-200"
+                        >
+                          Restore
+                        </button>
+                      )}
+                      {/* Delete */}
+                      <button
+                        onClick={() => deleteBackup(backup.name)}
+                        disabled={deletingFile === backup.name}
+                        className={`px-2 py-1 bg-[#414562] hover:bg-[#545C80] rounded-xl text-white cursor-pointer transition-colors duration-200 ${
+                          deletingFile === backup.name ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
+                      >
+                        {deletingFile === backup.name ? "Deleting..." : "Delete"}
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
+
+              {/* Last change info */}
               <p className="text-gray-400 text-sm mt-1">
                 Last change: {backup.lastChange || "-"}
               </p>

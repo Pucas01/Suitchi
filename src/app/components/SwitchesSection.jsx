@@ -1,8 +1,7 @@
 "use client";
 
-
 import { useState, useEffect } from "react";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import SwitchInfo from "./SwitchesSection/SwitchInfo";
 import BackupsList from "./SwitchesSection/BackupsList";
 import FileModal from "./SwitchesSection/FileModal";
@@ -11,6 +10,7 @@ import SSHModal from "./SwitchesSection/SSHModal";
 export default function SwitchesSection({ switchData }) {
   const { name, ip } = switchData;
 
+  // ---------------- State ----------------
   const [backups, setBackups] = useState([]);
   const [loadingBackups, setLoadingBackups] = useState(false);
   const [deletingFile, setDeletingFile] = useState(null);
@@ -47,20 +47,20 @@ export default function SwitchesSection({ switchData }) {
   }, []);
 
   // ---------------- Fetch TFTP Server ----------------
-    const fetchConfig = async () => {
-    try {
-      const res = await fetch("/api/tftp", { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch config");
-      const data = await res.json();
-      setTftpServer(data.config?.tftpServer || "");
-    } catch (err) {
-      console.error(err);
-      toast.error(`${err.message} - Failed to fetch TFTP config`, toastStyles);
-    }
-  };
-
-    useEffect(() => {
-    fetchConfig();
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/tftp", { credentials: "include" });
+        if (!res.ok) throw new Error("Failed to fetch TFTP config");
+        const data = await res.json();
+        setTftpServer(data.config?.tftpServer || "");
+      } catch (err) {
+        console.error(err);
+        toast.error(`${err.message} - Failed to fetch TFTP config`, {
+          style: { borderRadius: "10px", background: "#1A1A1F", color: "#fff" },
+        });
+      }
+    })();
   }, []);
 
   // ---------------- Helpers ----------------
@@ -75,7 +75,7 @@ export default function SwitchesSection({ switchData }) {
     return `${days}d ${hours}h ${minutes}m ${seconds}s`;
   };
 
-  // ---------------- Fetch Functions ----------------
+  // ---------------- Fetch Backups ----------------
   const fetchBackups = async () => {
     try {
       const res = await fetch("/api/backups", { credentials: "include" });
@@ -139,39 +139,27 @@ export default function SwitchesSection({ switchData }) {
         return;
       }
       if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
-
-      if (fileName.endsWith(".txt") || fileName.endsWith(".cfg")) {
-        const text = await res.text();
-        setFileContent(text);
-      } else {
-        toast.error("Unsupported file type for preview", {
-          style: { borderRadius: "10px", background: "#1A1A1F", color: "#fff" },
-        });
-        return;
-      }
+      const text = await res.text();
+      setFileContent(text);
       setViewingFile(fileName);
       setFileModalVisible(true);
     } catch (err) {
       console.error(err);
-      alert("Failed to load file");
+      toast.error("Failed to load file", {
+        style: { borderRadius: "10px", background: "#1A1A1F", color: "#fff" },
+      });
     }
   };
 
+  // ---------------- Fetch SNMP ----------------
   const fetchSNMP = async () => {
     if (!switchData.snmp?.enabled) {
-      setSnmpData({
-        status: "SNMP Disabled",
-        uptimeSeconds: null,
-        hostname: "-",
-        model: "-",
-      });
+      setSnmpData({ status: "SNMP Disabled", uptimeSeconds: null, hostname: "-", model: "-" });
       return;
     }
     setLoadingUptime(true);
     try {
-      const res = await fetch(`/api/snmp/${switchData.name}`, {
-        credentials: "include",
-      });
+      const res = await fetch(`/api/snmp/${switchData.name}`, { credentials: "include" });
       const data = await res.json();
       setSnmpData({
         uptimeSeconds: data.uptimeSeconds,
@@ -181,12 +169,7 @@ export default function SwitchesSection({ switchData }) {
       });
     } catch (err) {
       console.error(err);
-      setSnmpData({
-        uptimeSeconds: null,
-        hostname: "-",
-        model: "-",
-        status: "offline",
-      });
+      setSnmpData({ uptimeSeconds: null, hostname: "-", model: "-", status: "offline" });
     } finally {
       setLoadingUptime(false);
     }
@@ -201,54 +184,85 @@ export default function SwitchesSection({ switchData }) {
 
   // ---------------- SSH Modal ----------------
   const openSSH = () => {
-    setSshTutorial(null); // normal SSH, no tutorial
+    setSshTutorial(null); // normal SSH
     setSshModalVisible(true);
   };
 
-const openTutorialSSH = () => {
-  // Check if TFTP server is set
-  if (!tftpServer) {
-    toast.error("Please configure the TFTP server before setting up backups", {
-      style: { borderRadius: "10px", background: "#1A1A1F", color: "#fff" },
-    });
-    return; // Stop execution
-  }
-
-  setSshTutorial([
-    {
-      title: "Step 1: Enter configuration mode",
-      commands: ["conf t"]
-    },
-    {
-      title: "Step 2: Create the kron policy",
-      commands: [`kron policy-list TFTP-Config-Backup`, `cli copy startup-config tftp://${tftpServer}/${name}.cfg`]
-    },
-    {
-      title: "Step 2.5: Copy the config manually once",
-      commands: [`copy startup-config tftp://${tftpServer}/${name}.cfg`]
-    },
-    {
-      title: "Step 3: Create the kron job",
-      commands: ["kron occurrence TFTP-Config-Backup at 2:00 recurring", "policy-list TFTP-Config-Backup"]
-    },
-    {
-      title: "Step 4: Optionally show the schedule to confirm its creation",
-      commands: ["show kron schedule"]
-    },
-    {
-      title: "Step 5: Copy the running config to starting config",
-      commands: ["wr"]
-    },
-    {
-      title: "Step 6: Edit your switch in the webpage settings and add the file to fetch field",
-    },
-    {
-      title: "Step 7: Press the Fetch missing button to fetch the config",
+  const openTutorialSSH = () => {
+    if (!tftpServer) {
+      toast.error("Please configure the TFTP server before setting up backups", {
+        style: { borderRadius: "10px", background: "#1A1A1F", color: "#fff" },
+      });
+      return;
     }
-  ]);
 
-  setSshModalVisible(true);
-};
+    setSshTutorial([
+      {
+        title: "Step 1: Enter configuration mode",
+        commands: ["conf t"],
+      },
+      {
+        title: "Step 2: Create the kron policy",
+        commands: [`kron policy-list TFTP-Config-Backup`, `cli copy startup-config tftp://${tftpServer}/${name}.cfg`],
+      },
+      {
+        title: "Step 2.5: Copy the config manually once",
+        commands: [`copy startup-config tftp://${tftpServer}/${name}.cfg`],
+      },
+      {
+        title: "Step 3: Create the kron job",
+        commands: ["kron occurrence TFTP-Config-Backup at 2:00 recurring", "policy-list TFTP-Config-Backup"],
+      },
+      {
+        title: "Step 4: Optionally show the schedule",
+        commands: ["show kron schedule"],
+      },
+      {
+        title: "Step 5: Copy the running config to startup-config",
+        commands: ["wr"],
+      },
+      {
+        title: "Step 6: Add the file to fetch field in settings",
+      },
+      {
+        title: "Step 7: Press 'Fetch missing' to fetch the config",
+      },
+    ]);
+
+    setSshModalVisible(true);
+  };
+
+  // ---------------- Restore Backup ----------------
+  const openRestoreTutorial = (backupName) => {
+    if (!tftpServer) {
+      toast.error("Please configure the TFTP server before restoring backups", {
+        style: { borderRadius: "10px", background: "#1A1A1F", color: "#fff" },
+      });
+      return;
+    }
+
+    setSshTutorial([
+      {
+        title: "Step 1: Enter configuration mode",
+        commands: ["conf t"],
+      },
+      {
+        title: "Step 2: Copy the backup from TFTP",
+        commands: [`copy tftp://${tftpServer}/${backupName} startup-config`],
+      },
+      {
+        title: "Step 3: Confirm the config",
+        commands: ["show running-config"],
+      },
+      {
+        title: "Step 4: Save the config",
+        commands: ["wr"],
+      },
+    ]);
+
+    setSshModalVisible(true);
+  };
+
   // ---------------- Render ----------------
   return (
     <div className="flex-1 rounded-xl p-6 h-screen bg-[#1A1A1F] overflow-auto">
@@ -269,7 +283,8 @@ const openTutorialSSH = () => {
         viewFile={viewFile}
         isAdmin={isAdmin}
         switchName={name}
-        onSetupBackups={openTutorialSSH} // only tutorial opens this
+        onSetupBackups={openTutorialSSH} // SSH tutorial for setup
+        onRestoreBackup={openRestoreTutorial} // SSH tutorial for restore
       />
 
       <FileModal
@@ -284,9 +299,8 @@ const openTutorialSSH = () => {
         visible={sshModalVisible}
         onClose={() => setSshModalVisible(false)}
         ip={ip}
-        tutorialSteps={sshTutorial} // null = normal SSH
+        tutorialSteps={sshTutorial}
       />
-
     </div>
   );
 }
