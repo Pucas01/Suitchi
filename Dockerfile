@@ -21,7 +21,7 @@ WORKDIR /app
 
 # Copy only what's needed for runtime
 COPY --from=frontend-build /app/backend ./backend
-COPY --from=frontend-build /app/src/app/.next ./src/app/.next
+COPY --from=frontend-build /app/.next ./.next
 COPY --from=frontend-build /app/public ./public
 COPY --from=frontend-build /app/package*.json ./
 
