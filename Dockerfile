@@ -1,38 +1,39 @@
-# -------- Stage 1: Build frontend --------
+# -------- Stage 1: Install & Build frontend --------
 FROM node:24.8.0 AS frontend-build
-
-WORKDIR /app/src/app
-
-# Copy root package files and install dependencies
-COPY package*.json ./
-RUN npm install --legacy-peer-deps
-
-# Copy frontend source and build Next.js
-COPY src/app/ ./
-RUN npm run build
-
-# -------- Stage 2: Build backend --------
-FROM node:24.8.0 AS backend-build
 
 WORKDIR /app
 
-# Copy backend source code
-COPY backend/ ./backend/
+# Copy root package files and install all dependencies (backend + frontend)
+COPY package*.json ./
+RUN npm install --legacy-peer-deps
 
-# Copy frontend build from previous stage
+# Copy the full project (backend + frontend)
+COPY . .
+
+# Build Next.js frontend
+WORKDIR /app/src/app
+RUN npm run build
+
+# -------- Stage 2: Runtime --------
+FROM node:24.8.0 AS runtime
+
+WORKDIR /app
+
+# Copy only what's needed for runtime
+COPY --from=frontend-build /app/backend ./backend
 COPY --from=frontend-build /app/src/app/.next ./src/app/.next
 COPY --from=frontend-build /app/src/app/public ./src/app/public
-COPY --from=frontend-build /app/src/app/package.json ./src/app/package.json
+COPY --from=frontend-build /app/package*.json ./
 
 # Expose ports
 EXPOSE 3000
 EXPOSE 4000
 
-# Install pm2 to run both servers
+# Install pm2 globally
 RUN npm install -g pm2
 
-# Start both servers with pm2
-# Using ecosystem file ensures both backend and frontend run properly
+# Copy pm2 ecosystem config
 COPY ecosystem.config.js ./
 
+# Start both backend + frontend
 CMD ["pm2-runtime", "ecosystem.config.js"]
