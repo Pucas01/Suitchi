@@ -7,7 +7,7 @@
       "INT-CS.cfg"
     ],
     "snmp": {
-      "enabled": false,
+      "enabled": true,
       "community": "zabbix"
     }
   },

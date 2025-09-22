@@ -14,7 +14,9 @@ function initSSHServer(server) {
       if (data.type === "connect") {
         sshConn.on("ready", () => {
           sshConn.shell((err, stream) => {
-            if (err) return ws.send(JSON.stringify({ type: "error", message: err.message }));
+            if (err) {
+              return ws.send(JSON.stringify({ type: "error", message: err.message }));
+            }
 
             stream.on("data", (chunk) => {
               ws.send(JSON.stringify({ type: "data", data: chunk.toString("utf-8") }));
@@ -40,6 +42,22 @@ function initSSHServer(server) {
           port: 22,
           username: data.username,
           password: data.password,
+          algorithms: {
+            kex: [
+              "diffie-hellman-group1-sha1",
+              "diffie-hellman-group14-sha1"
+            ],
+            cipher: [
+              "aes128-cbc", "3des-cbc",
+              "aes128-ctr", "aes192-ctr", "aes256-ctr"
+            ],
+            hmac: [
+              "hmac-sha1", "hmac-md5"
+            ],
+            serverHostKey: [
+              "ssh-rsa", "ssh-dss"
+            ]
+          }
         });
       }
     });
