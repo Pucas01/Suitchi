@@ -11,7 +11,7 @@ RUN npm install --legacy-peer-deps
 COPY . .
 
 # Build Next.js frontend (root package.json, frontend in src/app)
-RUN npx next build src/app
+RUN npm run build
 
 # -------- Stage 2: Runtime --------
 FROM node:24.8.0 AS runtime
