@@ -18,9 +18,9 @@ WORKDIR /app
 
 # Copy root and backend package files
 COPY package*.json ./
-COPY Backend/package*.json ./Backend/
+COPY backend/package*.json ./backend/
 RUN npm install
-RUN cd Backend && npm install
+RUN cd backend && npm install
 
 # Copy backend source
 COPY Backend/ ./Backend/
