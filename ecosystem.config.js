@@ -3,13 +3,20 @@ module.exports = {
     {
       name: "backend",
       script: "backend/server.js",
-      watch: false
+      cwd: "/app",
+      env: {
+        PORT: 4000
+      }
     },
     {
       name: "frontend",
-      script: "npm",
-      args: "start --prefix src/app",
-      watch: false
+      script: "node_modules/next/dist/bin/next",
+      args: "start -p 3000",
+      cwd: "/app",
+      env: {
+        NODE_ENV: "production",
+        PORT: 3000
+      }
     }
   ]
 };

@@ -1,29 +1,25 @@
-# -------- Stage 1: Install & Build frontend --------
-FROM node:24.8.0 AS frontend-build
+# -------- Stage 1: Build frontend --------
+FROM node:24.8.0 AS builder
 
 WORKDIR /app
 
-# Copy root package files and install all dependencies (backend + frontend)
+# Copy root package files and install dependencies
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
-# Copy the full project (backend + frontend)
+# Copy everything (frontend + backend + public)
 COPY . .
 
 # Build Next.js frontend
-WORKDIR /app/src/app
-RUN npm run build
+RUN npm run build --prefix src/app
 
 # -------- Stage 2: Runtime --------
 FROM node:24.8.0 AS runtime
 
 WORKDIR /app
 
-# Copy only what's needed for runtime
-COPY --from=frontend-build /app/backend ./backend
-COPY --from=frontend-build /app/.next ./.next
-COPY --from=frontend-build /app/public ./public
-COPY --from=frontend-build /app/package*.json ./
+# Copy only necessary files from builder
+COPY --from=builder /app ./
 
 # Expose ports
 EXPOSE 3000
@@ -32,8 +28,6 @@ EXPOSE 4000
 # Install pm2 globally
 RUN npm install -g pm2
 
-# Copy pm2 ecosystem config
+# Start both servers with pm2
 COPY ecosystem.config.js ./
-
-# Start both backend + frontend
 CMD ["pm2-runtime", "ecosystem.config.js"]
