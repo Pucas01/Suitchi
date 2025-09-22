@@ -23,7 +23,7 @@ RUN npm install
 RUN cd backend && npm install
 
 # Copy backend source
-COPY Backend/ ./Backend/
+COPY backend/ ./backend/
 
 # Copy frontend build from previous stage
 COPY --from=frontend-build /app/.next ./src/app/.next
@@ -38,4 +38,4 @@ EXPOSE 4000
 RUN npm install -g pm2
 
 # Start both servers
-CMD ["pm2-runtime", "start", "Backend/server.js", "--name", "backend", "--", "&&", "cd src/app && npm run start --name frontend"]
+CMD ["pm2-runtime", "start", "backend/server.js", "--name", "backend", "--", "&&", "cd src/app && npm run start --name frontend"]
