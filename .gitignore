@@ -81,3 +81,6 @@ dist/
 *.njsproj
 *.sln
 backend/acl.db
+backend/downloads
+backend/config.json
+backend/switches.json
