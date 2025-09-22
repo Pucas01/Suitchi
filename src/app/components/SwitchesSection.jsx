@@ -20,6 +20,7 @@ export default function SwitchesSection({ switchData }) {
   const [sshModalVisible, setSshModalVisible] = useState(false);
   const [sshTutorial, setSshTutorial] = useState(null); // null = normal SSH
   const [currentUser, setCurrentUser] = useState(null);
+  const [tftpServer, setTftpServer] = useState("");
   const [snmpData, setSnmpData] = useState({
     uptimeSeconds: null,
     hostname: "-",
@@ -43,6 +44,23 @@ export default function SwitchesSection({ switchData }) {
         console.error(err);
       }
     })();
+  }, []);
+
+  // ---------------- Fetch TFTP Server ----------------
+    const fetchConfig = async () => {
+    try {
+      const res = await fetch("/api/tftp", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch config");
+      const data = await res.json();
+      setTftpServer(data.config?.tftpServer || "");
+    } catch (err) {
+      console.error(err);
+      toast.error(`${err.message} - Failed to fetch TFTP config`, toastStyles);
+    }
+  };
+
+    useEffect(() => {
+    fetchConfig();
   }, []);
 
   // ---------------- Helpers ----------------
@@ -187,43 +205,50 @@ export default function SwitchesSection({ switchData }) {
     setSshModalVisible(true);
   };
 
-  const openTutorialSSH = () => {
-      setSshTutorial([
-      {
-        title: "Step 1: Enter configuration mode",
-        commands: ["conf t"]
-      },  
-      {
-        title: "Step 2: Create the kron policy",
-        commands: ["kron policy-list TFTP-Config-Backup", "cli copy startup-config tftp://YOURTFTPSERVERADRESS/SWITCHNAME.cfg"]
-      },
-      {
-        title: "Step 2.5: Copy the config manually ones",
-        commands: ["copy startup-config tftp://YOURTFTPSERVERADRESS/SWITCHNAME.cfg"]
-      },
-      {
-        title: "Step 3: Create the kron job",
-        commands: ["kron occurrence TFTP-Config-Backup at 2:00 recurring", "policy-list TFTP-Config-Backup"]
-      },
-      {
-        title: "Step 4: Optionally show the scedule to confirm its creation",
-        commands: ["show kron schedule"]
-      },
-      {
-        title: "Step 5: Copy the running config to starting config",
-        commands: ["wr"]
-      },
-      {
-        title: "Step 6: Edit your switch in the this webpages settings and add the SWITCHNAME.cfg file to the files to fetch field",
-      },
-      {
-        title: "Step 7: Press the Fetch missing button to fetch the config",
-      }
-    ]);
+const openTutorialSSH = () => {
+  // Check if TFTP server is set
+  if (!tftpServer) {
+    toast.error("Please configure the TFTP server before setting up backups", {
+      style: { borderRadius: "10px", background: "#1A1A1F", color: "#fff" },
+    });
+    return; // Stop execution
+  }
 
-    setSshModalVisible(true);
-  };
+  setSshTutorial([
+    {
+      title: "Step 1: Enter configuration mode",
+      commands: ["conf t"]
+    },
+    {
+      title: "Step 2: Create the kron policy",
+      commands: [`kron policy-list TFTP-Config-Backup`, `cli copy startup-config tftp://${tftpServer}/${name}.cfg`]
+    },
+    {
+      title: "Step 2.5: Copy the config manually once",
+      commands: [`copy startup-config tftp://${tftpServer}/${name}.cfg`]
+    },
+    {
+      title: "Step 3: Create the kron job",
+      commands: ["kron occurrence TFTP-Config-Backup at 2:00 recurring", "policy-list TFTP-Config-Backup"]
+    },
+    {
+      title: "Step 4: Optionally show the schedule to confirm its creation",
+      commands: ["show kron schedule"]
+    },
+    {
+      title: "Step 5: Copy the running config to starting config",
+      commands: ["wr"]
+    },
+    {
+      title: "Step 6: Edit your switch in the webpage settings and add the file to fetch field",
+    },
+    {
+      title: "Step 7: Press the Fetch missing button to fetch the config",
+    }
+  ]);
 
+  setSshModalVisible(true);
+};
   // ---------------- Render ----------------
   return (
     <div className="flex-1 rounded-xl p-6 h-screen bg-[#1A1A1F] overflow-auto">
