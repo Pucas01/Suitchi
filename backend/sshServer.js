@@ -42,21 +42,29 @@ function initSSHServer(server) {
           port: 22,
           username: data.username,
           password: data.password,
-          algorithms: {
-            kex: [
-              "diffie-hellman-group1-sha1",
-              "diffie-hellman-group14-sha1"
-            ],
-            cipher: [
-              "aes128-cbc", "3des-cbc",
-              "aes128-ctr", "aes192-ctr", "aes256-ctr"
-            ],
-            hmac: [
-              "hmac-sha1", "hmac-md5"
-            ],
-            serverHostKey: [
-              "ssh-rsa", "ssh-dss"
-            ]
+            algorithms: {
+              kex: [
+                "diffie-hellman-group1-sha1",
+                "diffie-hellman-group14-sha1",
+                "diffie-hellman-group14-sha256",
+                "diffie-hellman-group16-sha512",
+                "curve25519-sha256",
+                "curve25519-sha256@libssh.org"
+              ],
+              cipher: [
+                "aes128-ctr","aes192-ctr","aes256-ctr",
+                "aes128-gcm","aes256-gcm",
+                "chacha20-poly1305@openssh.com",
+                "3des-cbc"
+              ],
+              hmac: [
+                "hmac-sha1","hmac-md5",
+                "hmac-sha2-256","hmac-sha2-512"
+              ],
+              serverHostKey: [
+                "ssh-rsa","rsa-sha2-256","rsa-sha2-512",
+                "ssh-ed25519","ssh-dss"
+              ]
           }
         });
       }
