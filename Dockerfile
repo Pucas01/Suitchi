@@ -3,8 +3,8 @@ FROM node:24.8.0 AS frontend-build
 
 WORKDIR /app/src/app
 
-# Copy frontend package files and install dependencies
-COPY src/app/package*.json ./
+# Copy root package files and install dependencies
+COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
 # Copy frontend source and build Next.js
@@ -15,14 +15,6 @@ RUN npm run build
 FROM node:24.8.0 AS backend-build
 
 WORKDIR /app
-
-# Copy root package files and install dependencies
-COPY package*.json ./
-RUN npm install --legacy-peer-deps
-
-# Copy backend package and install dependencies
-COPY backend/package*.json ./backend/
-RUN cd backend && npm install --legacy-peer-deps
 
 # Copy backend source code
 COPY backend/ ./backend/
