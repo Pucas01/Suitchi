@@ -5,6 +5,40 @@ const path = require("path");
 const tftp = require("tftp");
 const { getSwitches, getConfig, normalizeFiles, LOCAL_DIR } = require("../helpers");
 
+// ----------------------
+// GET current TFTP server config
+// ----------------------
+router.get("/", (req, res) => {
+  try {
+    const config = getConfig();
+    res.json({ config });
+  } catch (err) {
+    console.error("Failed to fetch TFTP config:", err);
+    res.status(500).json({ error: "Failed to fetch config" });
+  }
+});
+
+// ----------------------
+// PUT to update TFTP server IP
+// ----------------------
+router.put("/", (req, res) => {
+  const { tftpServer } = req.body;
+  if (!tftpServer) return res.status(400).json({ error: "TFTP server IP required" });
+
+  try {
+    const config = getConfig();
+    config.tftpServer = tftpServer;
+    fs.writeFileSync(path.join(__dirname, "../config.json"), JSON.stringify(config, null, 2));
+    res.json({ success: true, config });
+  } catch (err) {
+    console.error("Failed to update TFTP config:", err);
+    res.status(500).json({ error: "Failed to update config" });
+  }
+});
+
+// ----------------------
+// Fetch missing backups for a switch
+// ----------------------
 router.get("/fetch-missing/:switchName", async (req, res) => {
   const { switchName } = req.params;
   const switches = getSwitches();
@@ -28,12 +62,11 @@ router.get("/fetch-missing/:switchName", async (req, res) => {
     for (const filename of normalizeFiles(sw.files, sw.name)) {
       if (!filename) continue;
 
-      // Keep the same extension as the original file
       const destFile = path.join(switchDir, path.basename(filename));
 
       await new Promise((resolve, reject) => {
         console.log(`[TFTP] Downloading '${filename}' to '${destFile}'...`);
-        
+
         client.get(filename, destFile, (err, size) => {
           if (err) {
             console.error(`[TFTP] FAILED to download '${filename}':`, err);
@@ -42,11 +75,11 @@ router.get("/fetch-missing/:switchName", async (req, res) => {
           }
 
           console.log(`[TFTP] SUCCESS downloading '${filename}'. Size: ${size} bytes.`);
-          
+
           if (size === 0) {
             console.warn(`[TFTP] ATTENTION: The downloaded file '${filename}' is empty on the server.`);
           }
-          
+
           resolve();
         });
       });

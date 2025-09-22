@@ -4,7 +4,7 @@
     "ip": "172.16.12.254",
     "image": "https://www.rogerperkin.co.uk/wp-content/uploads/2018/05/cisco-3850-ios-upgrade-roger-perkin-ccie.jpg",
     "files": [
-      "INT-CS.cfg"
+      "INT01-CSW.cfg"
     ],
     "snmp": {
       "enabled": true,
