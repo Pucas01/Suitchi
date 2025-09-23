@@ -18,7 +18,7 @@ router.get("/", (req, res) => {
       let lastChange = "-";
       if (fs.existsSync(filePath)) {
         const content = fs.readFileSync(filePath, "utf-8");
-        // Look for a line like "Last configuration change at 08:35:39 UTC Wed Sep 17 2025 by Lucas"
+        // Look for last change line
         const match = content.match(/Last configuration change at (.+)/);
         if (match) lastChange = match[1];
       }

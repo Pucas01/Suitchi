@@ -27,7 +27,6 @@ export default function SSHTerminal({ host, username, password, onClose }) {
 
     term.open(terminalRef.current);
 
-    // Ensure the container has height before fit
     setTimeout(() => {
       try {
         fitAddon.fit();
@@ -36,7 +35,6 @@ export default function SSHTerminal({ host, username, password, onClose }) {
       }
     }, 0);
 
-    // Resize handler
     const handleResize = () => {
       try {
         fitAddon.fit();
@@ -44,7 +42,7 @@ export default function SSHTerminal({ host, username, password, onClose }) {
     };
     window.addEventListener("resize", handleResize);
 
-    // WebSocket
+    // ---------------- WebSocket ----------------
     const ws = new WebSocket(`ws://${window.location.hostname}:4000/ssh`);
 
     ws.onopen = () => {

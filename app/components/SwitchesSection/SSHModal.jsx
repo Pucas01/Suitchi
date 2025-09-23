@@ -11,7 +11,6 @@ export default function SSHModal({ visible, onClose, ip, tutorialSteps }) {
 
   const storageKey = `sshUsername_${ip}`;
 
-  // Autofocus username/password
   useEffect(() => {
     if (visible && !startSSH) {
       const savedUsername = localStorage.getItem(storageKey);
@@ -25,7 +24,6 @@ export default function SSHModal({ visible, onClose, ip, tutorialSteps }) {
     }
   }, [visible, startSSH, storageKey]);
 
-  // Save username
   useEffect(() => {
     if (username) localStorage.setItem(storageKey, username);
   }, [username, storageKey]);
@@ -85,7 +83,6 @@ export default function SSHModal({ visible, onClose, ip, tutorialSteps }) {
             </button>
           </div>
         ) : (
-          // Connected: SSH Terminal + Tutorial
           <>
             {/* Tutorial sidebar */}
             {tutorialSteps && (

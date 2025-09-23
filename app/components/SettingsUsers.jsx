@@ -23,7 +23,7 @@ export default function UserManagement() {
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const roleDropdownRef = useRef(null);
 
-  // Fetch logged-in user
+// ---------------- Fetch User ----------------
   const fetchCurrentUser = async () => {
     try {
       const res = await fetch("/api/users/me", { credentials: "include" });
@@ -52,7 +52,6 @@ export default function UserManagement() {
     fetchUsers();
   }, []);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target)) {
@@ -63,6 +62,7 @@ export default function UserManagement() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // ---------------- User Logic ----------------
   const addUser = async () => {
     if (!newUser.username || !newUser.password) return toast.error("Username and Password are required", toastStyles);
     setLoading(true);
@@ -131,6 +131,7 @@ export default function UserManagement() {
   const isAdmin = currentUser?.role === "admin";
   if (!isAdmin) return null;
 
+  // ---------------- Render ----------------
   return (
     <div className="space-y-6">
       <h2 className="text-2xl">User Management</h2>

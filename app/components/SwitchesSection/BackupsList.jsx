@@ -9,8 +9,8 @@ export default function BackupsList({
   viewFile,
   isAdmin,
   switchName,
-  onSetupBackups,    // Setup backups callback
-  onRestoreBackup,   // Restore backup callback
+  onSetupBackups,
+  onRestoreBackup,
 }) {
   const hasBackups = backups.length > 0;
 

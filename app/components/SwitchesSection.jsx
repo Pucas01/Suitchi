@@ -18,7 +18,7 @@ export default function SwitchesSection({ switchData }) {
   const [fileContent, setFileContent] = useState("");
   const [fileModalVisible, setFileModalVisible] = useState(false);
   const [sshModalVisible, setSshModalVisible] = useState(false);
-  const [sshTutorial, setSshTutorial] = useState(null); // null = normal SSH
+  const [sshTutorial, setSshTutorial] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [tftpServer, setTftpServer] = useState("");
   const [snmpData, setSnmpData] = useState({
@@ -184,7 +184,7 @@ export default function SwitchesSection({ switchData }) {
 
   // ---------------- SSH Modal ----------------
   const openSSH = () => {
-    setSshTutorial(null); // normal SSH
+    setSshTutorial(null);
     setSshModalVisible(true);
   };
 
@@ -203,7 +203,7 @@ export default function SwitchesSection({ switchData }) {
       },
       {
         title: "Step 2: Create the kron policy",
-        commands: [`kron policy-list TFTP-Config-Backup`, `cli copy startup-config tftp://${tftpServer}/${name}.cfg`],
+        commands: [`kron policy-list TFTP-Config-Backup`, `cli copy startup-config tftp://${tftpServer}/${name}.cfg`, 'exit'],
       },
       {
         title: "Step 2.5: Copy the config manually once",
@@ -211,18 +211,18 @@ export default function SwitchesSection({ switchData }) {
       },
       {
         title: "Step 3: Create the kron job",
-        commands: ["kron occurrence TFTP-Config-Backup at 2:00 recurring", "policy-list TFTP-Config-Backup"],
+        commands: ["kron occurrence TFTP-Config-Backup at 2:00 recurring", "policy-list TFTP-Config-Backup", "exit"],
       },
       {
         title: "Step 4: Optionally show the schedule",
-        commands: ["show kron schedule"],
+        commands: ["do show kron schedule"],
       },
       {
         title: "Step 5: Copy the running config to startup-config",
         commands: ["wr"],
       },
       {
-        title: "Step 6: Add the file to fetch field in settings",
+        title: `Step 6: Add ${name}.cfg to the fetch field in Switch settings`,
       },
       {
         title: "Step 7: Press 'Fetch missing' to fetch the config",
@@ -283,8 +283,8 @@ export default function SwitchesSection({ switchData }) {
         viewFile={viewFile}
         isAdmin={isAdmin}
         switchName={name}
-        onSetupBackups={openTutorialSSH} // SSH tutorial for setup
-        onRestoreBackup={openRestoreTutorial} // SSH tutorial for restore
+        onSetupBackups={openTutorialSSH}
+        onRestoreBackup={openRestoreTutorial} 
       />
 
       <FileModal

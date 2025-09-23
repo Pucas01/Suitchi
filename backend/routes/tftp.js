@@ -5,9 +5,7 @@ const path = require("path");
 const tftp = require("tftp");
 const { getSwitches, getConfig, normalizeFiles, LOCAL_DIR } = require("../helpers");
 
-// ----------------------
 // GET current TFTP server config
-// ----------------------
 router.get("/", (req, res) => {
   try {
     const config = getConfig();
@@ -18,9 +16,8 @@ router.get("/", (req, res) => {
   }
 });
 
-// ----------------------
+
 // PUT to update TFTP server IP
-// ----------------------
 router.put("/", (req, res) => {
   const { tftpServer } = req.body;
   if (!tftpServer) return res.status(400).json({ error: "TFTP server IP required" });
@@ -36,9 +33,7 @@ router.put("/", (req, res) => {
   }
 });
 
-// ----------------------
 // Fetch missing backups for a switch
-// ----------------------
 router.get("/fetch-missing/:switchName", async (req, res) => {
   const { switchName } = req.params;
   const switches = getSwitches();

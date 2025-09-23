@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // ---------------- Login Logic ----------------
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -19,7 +20,7 @@ export default function LoginPage() {
       const res = await fetch("/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // ✅ important for session cookies
+        credentials: "include", 
         body: JSON.stringify({ username, password }),
       });
 
@@ -31,10 +32,6 @@ export default function LoginPage() {
         return;
       }
 
-      // Optionally fetch user info
-      // const meRes = await fetch("/api/users/me", { credentials: "include" });
-      // const meData = await meRes.json();
-
       setLoading(false);
       router.push("/"); // redirect to main page
     } catch (err) {
@@ -43,7 +40,7 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
+// ---------------- Render ----------------
   return (
     <div className="flex items-center justify-center min-h-screen bg-[#1A1A1F]">
       <div className="bg-[#1E1E23] p-8 rounded-xl shadow-xl w-96">

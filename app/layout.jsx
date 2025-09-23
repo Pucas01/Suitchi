@@ -1,12 +1,10 @@
-import Link from "next/link";
-import Image from "next/image";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { Poppins } from 'next/font/google';
 
 const poppins = Poppins({
   subsets: ['latin'],
-  weight: ['400', '600'], // or just 'variable' if you're using all weights
+  weight: ['400', '600'], 
 });
 
 export const metadata = {

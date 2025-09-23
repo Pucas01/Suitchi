@@ -1,4 +1,3 @@
-// backend/sshServer.js
 const { Server } = require("ws");
 const { Client } = require("ssh2");
 

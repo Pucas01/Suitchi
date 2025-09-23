@@ -11,7 +11,7 @@ export default function Page() {
   const [popping, setPopping] = useState(null);
   const [transitioning, setTransitioning] = useState(false);
   const [switches, setSwitches] = useState([]);
-  const [user, setUser] = useState(null); // optional user info
+  const [user, setUser] = useState(null);
   const router = useRouter();
 
 
@@ -25,7 +25,7 @@ export default function Page() {
           return;
         }
         const data = await res.json();
-        setUser(data.user); // store logged-in user info
+        setUser(data.user);
       } catch (err) {
         console.error(err);
         router.replace("/login");
@@ -35,12 +35,11 @@ export default function Page() {
     checkAuth();
   }, [router]);
 
-  // ---------------- Fetch Switches ----------------
+// ---------------- Fetch Switches ----------------
 const fetchSwitches = async () => {
   try {
-    const res = await fetch("/api/switches", { credentials: "include" }); // ✅ include cookies
+    const res = await fetch("/api/switches", { credentials: "include" }); 
     if (res.status === 401) {
-      // session expired or not logged in
       router.replace("/login");
       return;
     }
@@ -53,9 +52,16 @@ const fetchSwitches = async () => {
   }
 };
 
-  useEffect(() => {
-    fetchSwitches();
-  }, []);
+useEffect(() => {
+  fetchSwitches();
+}, []);
+
+// ---------------- Auto-select first switch ----------------
+useEffect(() => {
+  if (switches.length > 0 && !active) {
+    setActive(switches[0]); 
+  }
+}, [switches, active]);
 
   // ---------------- Navigation ----------------
   const handleClick = (sw) => {
@@ -145,21 +151,42 @@ const fetchSwitches = async () => {
 
       {/* Main Content */}
       <main className="flex-1 bg-[#121217] pt-6 h-screen overflow-auto px-6 relative">
-        <div className={`transition-opacity duration-200 ${transitioning ? "opacity-0" : "opacity-100"}`}>
-          {!active && <p className="text-gray-400">Select a switch to view backups.</p>}
+        <div
+          className={`transition-opacity duration-200 ${
+            transitioning ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          {!active && (
+            <div className="flex flex-col items-center h-screen text-center space-y-4 p-6 bg-[#1A1A1F] rounded-xl">
+              <div className="bg-[#1E1E23] rounded-xl p-6 text-center flex flex-col items-center w-full space-y-4">
+              <h2 className="text-5xl font-semibold">Welcome!</h2>
+              <p className="text-gray-400 text-2xl max-w-md">
+                First things you should do:
+              </p>
+              <ul className="text-gray-400 text-1xl space-y-1 max-w-md list-disc list-inside text-left">
+                <li>Change the default admin password</li>
+                <li>Set a TFTP Server address</li>
+                <li>Add a switch</li>
+              </ul>
+              <p className="text-gray-400 max-w-md">
+                All of this can be done on the {" "}
+                <span className="font-semibold">Settings</span> page.
+              </p>
+              </div>
+            </div>
+          )}
 
           {switches.map(
             (sw) =>
               active?.name === sw.name && (
-                <SwitchesSection
-                  key={sw.name}
-                  switchData={sw}
-                />
+                <SwitchesSection key={sw.name} switchData={sw} />
               )
           )}
 
           {active === "ACL" && <ACLviewer />}
-          {active === "Settings" && <SettingsSection refreshSwitches={fetchSwitches} />}
+          {active === "Settings" && (
+            <SettingsSection refreshSwitches={fetchSwitches} />
+          )}
         </div>
       </main>
     </div>

@@ -23,20 +23,20 @@ router.post("/login", (req, res) => {
   });
 });
 
-// ------------------ CHECK LOGGED IN ------------------ //
+// ------------------ CHECK LOGGED IN ------------------ 
 router.get("/me", (req, res) => {
   if (!req.session?.user) return res.status(401).json({ error: "Not logged in" });
   res.json({ user: req.session.user });
 });
 
-// ------------------ LOGOUT ------------------ //
+// ------------------ LOGOUT ------------------ 
 router.post("/logout", (req, res) => {
   req.session.destroy(() => {
     res.json({ success: true });
   });
 });
 
-// ------------------ GET USERS ------------------ //
+// ------------------ GET USERS ------------------
 router.get("/", (req, res) => {
   db.all("SELECT username, role FROM users", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -44,7 +44,7 @@ router.get("/", (req, res) => {
   });
 });
 
-// ------------------ ADD USER ------------------ //
+// ------------------ ADD USER ------------------ 
 router.post("/", async (req, res) => {
   const { username, password, role } = req.body;
   if (!username || !password) return res.status(400).json({ error: "Username and password required" });
@@ -61,7 +61,7 @@ router.post("/", async (req, res) => {
   );
 });
 
-// ------------------ DELETE USER ------------------ //
+// ------------------ DELETE USER ------------------
 router.delete("/:username", (req, res) => {
   const { username } = req.params;
   db.run("DELETE FROM users WHERE username = ?", [username], function (err) {
@@ -71,7 +71,7 @@ router.delete("/:username", (req, res) => {
   });
 });
 
-// ------------------ CHANGE PASSWORD ------------------ //
+// ------------------ CHANGE PASSWORD ------------------
 router.put("/:username/password", async (req, res) => {
   const { username } = req.params;
   const { password } = req.body;

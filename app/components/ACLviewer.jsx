@@ -20,7 +20,7 @@ export default function ACLviewer() {
   const switchDropdownRef = useRef(null);
   const fileDropdownRef = useRef(null);
 
-  // Load switches on mount
+
   useEffect(() => {
     fetch("/api/switches", { credentials: "include" })
       .then(res => res.json())
@@ -28,7 +28,6 @@ export default function ACLviewer() {
       .catch(console.error);
   }, []);
 
-  // Update files when switch changes
   useEffect(() => {
     const sw = switches.find(s => s.name === switchName);
     if (sw) setFiles(sw.files || []);
@@ -38,7 +37,6 @@ export default function ACLviewer() {
     setShowTable(false);
   }, [switchName, switches]);
 
-  // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(event) {
       if (switchDropdownRef.current && !switchDropdownRef.current.contains(event.target)) {
@@ -86,7 +84,6 @@ export default function ACLviewer() {
     }
   };
 
-  // Group ACLs safely
   const groupedACLs = aclRules?.reduce((acc, rule) => {
     if (!rule.acl_name) rule.acl_name = "Unnamed ACL";
     if (!acc[rule.acl_name]) acc[rule.acl_name] = [];
@@ -94,6 +91,7 @@ export default function ACLviewer() {
     return acc;
   }, {}) || {};
 
+  // ---------------- Render ----------------
   return (
     <div className="p-6 bg-[#1A1A1F] rounded-xl h-screen space-y-6">
       <div className="rounded-xl p-6 bg-[#1E1E23] text-white">
