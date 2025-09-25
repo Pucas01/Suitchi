@@ -2,7 +2,7 @@
  a webapp for managing your network switches
 
 Docker Compose yaml:
-
+```
 services: 
   suitchi: 
     image: ghcr.io/pucas01/suitchi:latest 
@@ -17,5 +17,5 @@ services:
     environment: 
       - NODE_ENV=production 
     restart: unless-stopped 
-
+```
 THIS IS A SCHOOL PROJECT AND NOT MEANT AS A SERIOUS PROGRAM TO BE USED BY EVERYONE
