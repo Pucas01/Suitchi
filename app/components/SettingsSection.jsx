@@ -426,7 +426,7 @@ export default function SettingsSection({ refreshSwitches }) {
       </div>
       )}
   <UserManagement />
-
+   <a href="https://github.com/Pucas01/Suitchi/releases/" target="_blank">Version 1.0.0</a>
     </div>
   );
 }

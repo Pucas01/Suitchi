@@ -82,5 +82,4 @@ dist/
 *.sln
 backend/acl.db
 backend/downloads
-backend/config.json
-backend/switches.json
+backend/config

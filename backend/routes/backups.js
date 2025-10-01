@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const fs = require("fs");
 const path = require("path");
-const { getSwitches, LOCAL_DIR } = require("../helpers");
+const { getSwitches, LOCAL_DIR } = require("../configHelpers");
 
 router.get("/", (req, res) => {
   const switches = getSwitches();

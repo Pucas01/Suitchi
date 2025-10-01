@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const db = require("../dbHelper");
 const { parseACLFromFile } = require("../aclParser");
 
 // Fetch ACL rules for a specific switch and file

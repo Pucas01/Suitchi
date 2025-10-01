@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { getSwitches } = require("../helpers");
+const { getSwitches } = require("../configHelpers");
 const { fetchSNMPData } = require("../snmpHelper");
 
 

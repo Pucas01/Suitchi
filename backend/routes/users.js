@@ -1,6 +1,6 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const db = require("../db"); // your sqlite3 db
+const db = require("../dbHelper"); // your sqlite3 db
 const router = express.Router();
 const SALT_ROUNDS = 10; // same as in db.js
 

@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { LOCAL_DIR } = require("./helpers");
+const { LOCAL_DIR } = require("./configHelpers");
 
 function parseACLFromFile(switchName, fileName) {
   const filePath = path.join(LOCAL_DIR, switchName, fileName);

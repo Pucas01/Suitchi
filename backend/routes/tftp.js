@@ -3,7 +3,7 @@ const router = express.Router();
 const fs = require("fs");
 const path = require("path");
 const tftp = require("tftp");
-const { getSwitches, getConfig, normalizeFiles, LOCAL_DIR } = require("../helpers");
+const { getSwitches, getConfig, normalizeFiles, LOCAL_DIR } = require("../configHelpers");
 
 // GET current TFTP server config
 router.get("/", (req, res) => {

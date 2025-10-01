@@ -1,20 +1,10 @@
 const fs = require("fs");
 const path = require("path");
 
+const CONFIG_DIR = path.join(__dirname, "config");
 const LOCAL_DIR = path.join(__dirname, "downloads");
-const SWITCHES_FILE = path.join(__dirname, "switches.json");
-const CONFIG_FILE = path.join(__dirname, "config.json");
-
-function safeReadJSON(filePath, fallback) {
-  if (!fs.existsSync(filePath)) return fallback;
-  try {
-    const content = fs.readFileSync(filePath, "utf-8");
-    return content ? JSON.parse(content) : fallback;
-  } catch (err) {
-    console.error(`Failed to parse JSON from ${filePath}:`, err);
-    return fallback;
-  }
-}
+const SWITCHES_FILE = path.join(CONFIG_DIR, "switches.json");
+const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
 
 const getSwitches = () => (fs.existsSync(SWITCHES_FILE) ? JSON.parse(fs.readFileSync(SWITCHES_FILE, "utf-8")) : []);
 const saveSwitches = (switches) => fs.writeFileSync(SWITCHES_FILE, JSON.stringify(switches, null, 2));

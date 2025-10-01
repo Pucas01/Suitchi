@@ -9,8 +9,8 @@ const aclRoutes = require("./routes/acl");
 const snmpRoutes = require("./routes/snmp");
 const usersRoutes = require("./routes/users");
 const requireAuth = require("./authMiddleware");
-const { LOCAL_DIR } = require("./helpers");
-const { initSSHServer } = require("./sshServer");
+const { LOCAL_DIR } = require("./configHelpers");
+const { initSSHServer } = require("./sshHelper");
 const crypto = require("crypto");
 const os = require("os");
 
