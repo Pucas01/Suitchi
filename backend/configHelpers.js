@@ -3,6 +3,15 @@ const path = require("path");
 
 const CONFIG_DIR = path.join(__dirname, "config");
 const LOCAL_DIR = path.join(__dirname, "downloads");
+
+if (!fs.existsSync(CONFIG_DIR)) {
+  fs.mkdirSync(CONFIG_DIR, { recursive: true });
+}
+
+if (!fs.existsSync(LOCAL_DIR)) {
+  fs.mkdirSync(LOCAL_DIR, { recursive: true });
+}
+
 const SWITCHES_FILE = path.join(CONFIG_DIR, "switches.json");
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
 
