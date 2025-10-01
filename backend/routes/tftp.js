@@ -3,7 +3,7 @@ const router = express.Router();
 const fs = require("fs");
 const path = require("path");
 const tftp = require("tftp");
-const { getSwitches, getConfig, normalizeFiles, LOCAL_DIR } = require("../configHelpers");
+const { getSwitches, getConfig, normalizeFiles, LOCAL_DIR, CONFIG_FILE} = require("../configHelpers");
 
 // GET current TFTP server config
 router.get("/", (req, res) => {
@@ -25,7 +25,7 @@ router.put("/", (req, res) => {
   try {
     const config = getConfig();
     config.tftpServer = tftpServer;
-    fs.writeFileSync(path.join(__dirname, "../config.json"), JSON.stringify(config, null, 2));
+    fs.writeFileSync(path.join(CONFIG_FILE), JSON.stringify(config, null, 2));
     res.json({ success: true, config });
   } catch (err) {
     console.error("Failed to update TFTP config:", err);

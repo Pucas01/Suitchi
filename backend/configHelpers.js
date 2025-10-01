@@ -27,4 +27,4 @@ const normalizeFiles = (files, fallbackName) => {
 };
 
 
-module.exports = { LOCAL_DIR, getSwitches, saveSwitches, getConfig, saveConfig, normalizeFiles };
+module.exports = { LOCAL_DIR, CONFIG_FILE, getSwitches, saveSwitches, getConfig, saveConfig, normalizeFiles };
